@@ -2,7 +2,7 @@ import Vapor
 
 func routes(_ app: Application) throws {
     app.get { req async in
-        "Blip API is running."
+        "Bzap API is running."
     }
 
     app.get("health") { req async in

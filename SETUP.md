@@ -59,7 +59,7 @@ xcodegen generate
 open Blip.xcodeproj
 ```
 
-In Xcode: select the **Blip** scheme, choose an iPhone 16 simulator, hit Run. The app launches pointing at `http://localhost:8080` by default.
+In Xcode: select the **Bzap** scheme, choose an iPhone 16 simulator, hit Run. The app launches pointing at `http://localhost:8080` by default.
 
 > **Note:** Push notifications do not work in the simulator. Use a physical device for end-to-end testing (see section 5).
 
@@ -143,7 +143,7 @@ cd ios && xcodegen generate
 ### Signing
 
 1. Open `Blip.xcodeproj` in Xcode.
-2. Select the **Blip** target → Signing & Capabilities.
+2. Select the **Bzap** target → Signing & Capabilities.
 3. Tick **Automatically manage signing**, select your team.
 4. Xcode will fetch the provisioning profile automatically.
 

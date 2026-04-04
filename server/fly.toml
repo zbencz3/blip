@@ -1,4 +1,4 @@
-app = "boopsy-server"
+app = "bzap-server"
 primary_region = "iad"
 
 [build]

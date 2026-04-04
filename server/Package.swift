@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "blip-server",
+    name: "bzap-server",
     platforms: [
         .macOS(.v13)
     ],

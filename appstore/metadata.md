@@ -64,9 +64,9 @@ Free
 - Bzap Yearly: $9.99/year
 
 ## URLs
-- Support URL: https://zbencz3.github.io/bzap/
-- Marketing URL: https://zbencz3.github.io/bzap/
-- Privacy Policy URL: https://zbencz3.github.io/bzap/privacy.html
+- Support URL: https://zbencz3.github.io/blip/
+- Marketing URL: https://zbencz3.github.io/blip/
+- Privacy Policy URL: https://zbencz3.github.io/blip/privacy.html
 
 ## Copyright
 © 2026 iSylva
