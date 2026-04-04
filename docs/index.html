@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blip — Push Notifications via Webhook</title>
+    <style>
+        :root {
+            --bg: #000; --card: #1c1c1e; --border: #2a2a2c;
+            --purple: #8c5cf5; --green: #a6ff00; --text: #fff; --muted: #8e8e93;
+            --red: #ff453a; --blue: #5fa8ff; --orange: #ff9f0a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+        /* Hero */
+        .hero { text-align: center; padding: 100px 0 60px; }
+        .hero h1 { font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
+        .hero h1 span { color: var(--purple); }
+        .hero .tagline { font-size: 1.3rem; color: var(--muted); max-width: 480px; margin: 0 auto 40px; }
+        .platforms { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
+        .platform-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 99px; font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+        /* Code block */
+        .code-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin: 32px auto; text-align: left; max-width: 600px; position: relative; }
+        .code-card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; font-weight: 600; }
+        .code-card pre { font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.85rem; color: var(--green); overflow-x: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.7; }
+        .code-card pre .url { color: var(--purple); }
+
+        /* Section headers */
+        .section-title { font-size: 2.2rem; font-weight: 700; text-align: center; margin-bottom: 12px; letter-spacing: -0.5px; }
+        .section-subtitle { text-align: center; color: var(--muted); font-size: 1.1rem; margin-bottom: 40px; max-width: 500px; margin-left: auto; margin-right: auto; }
+        section { padding: 80px 0; }
+
+        /* Use Cases */
+        .use-cases { background: linear-gradient(180deg, transparent 0%, rgba(140,92,245,0.03) 100%); }
+        .use-case-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+        .use-case { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px; transition: border-color 0.2s, transform 0.2s; }
+        .use-case:hover { border-color: var(--purple); transform: translateY(-2px); }
+        .use-case .emoji { font-size: 2rem; margin-bottom: 12px; display: block; }
+        .use-case h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+        .use-case p { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
+        .use-case .example { margin-top: 12px; padding: 10px 14px; background: rgba(0,0,0,0.3); border-radius: 10px; font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--green); line-height: 1.5; }
+
+        /* Two-way actions */
+        .actions-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
+        @media (max-width: 640px) { .actions-demo { grid-template-columns: 1fr; } }
+        .phone-mockup { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 16px; max-width: 320px; margin: 0 auto; }
+        .phone-notif { background: rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .phone-notif .app-icon { display: inline-flex; width: 20px; height: 20px; background: var(--purple); border-radius: 5px; margin-right: 6px; vertical-align: middle; align-items: center; justify-content: center; font-size: 10px; }
+        .phone-notif .app-name { font-size: 0.75rem; color: var(--muted); font-weight: 600; vertical-align: middle; }
+        .phone-notif .notif-title { font-weight: 700; font-size: 0.95rem; margin-top: 8px; }
+        .phone-notif .notif-body { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+        .phone-actions { display: flex; gap: 6px; }
+        .phone-btn { flex: 1; padding: 10px 6px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; border: none; text-align: center; }
+        .phone-btn.green { background: var(--green); color: #000; }
+        .phone-btn.gray { background: #2c2c2e; color: var(--text); }
+        .phone-btn.red { background: var(--red); color: var(--text); }
+
+        .actions-text h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 12px; }
+        .actions-text p { color: var(--muted); font-size: 0.95rem; margin-bottom: 16px; }
+        .actions-text ul { list-style: none; }
+        .actions-text li { padding: 6px 0; font-size: 0.9rem; color: var(--muted); }
+        .actions-text li::before { content: "→ "; color: var(--purple); font-weight: 700; }
+
+        /* Features */
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .feature { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center; }
+        .feature .icon { font-size: 1.8rem; margin-bottom: 10px; display: block; }
+        .feature h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+        .feature p { font-size: 0.8rem; color: var(--muted); }
+
+        /* API */
+        .endpoint { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: baseline; gap: 12px; }
+        .method { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; font-family: 'SF Mono', monospace; letter-spacing: 0.5px; flex-shrink: 0; }
+        .method.post { background: rgba(106,220,80,0.15); color: #6fdd5e; }
+        .method.get { background: rgba(95,168,255,0.15); color: #5fa8ff; }
+        .method.delete { background: rgba(255,69,58,0.15); color: #ff6b6b; }
+        .path { font-family: 'SF Mono', monospace; font-size: 0.88rem; }
+        .desc { color: var(--muted); font-size: 0.82rem; margin-left: auto; }
+
+        /* Payload table */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td code { background: rgba(140,92,245,0.1); color: var(--purple); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 0.8rem; }
+
+        /* CTA */
+        .cta { text-align: center; padding: 80px 0; }
+        .cta h2 { font-size: 2rem; font-weight: 700; margin-bottom: 16px; }
+        .cta p { color: var(--muted); margin-bottom: 32px; }
+        .cta-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: var(--green); color: #000; font-weight: 700; font-size: 1rem; border-radius: 14px; text-decoration: none; transition: transform 0.2s; }
+        .cta-btn:hover { transform: scale(1.03); text-decoration: none; }
+
+        /* Footer */
+        footer { text-align: center; padding: 40px 0; color: var(--muted); font-size: 0.82rem; border-top: 1px solid var(--border); }
+        footer a { color: var(--purple); text-decoration: none; }
+        a { color: var(--purple); text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HERO -->
+    <section class="hero">
+        <h1>Make it go <span>blip</span></h1>
+        <p class="tagline">Push notifications to your Apple devices with a simple webhook. No signup. No dashboard. Just curl.</p>
+
+        <div class="code-card">
+            <div class="label">One line. That's it.</div>
+            <pre>curl -X POST <span class="url">https://api.blip.app/v1/your_secret</span> \
+  -d '{"title":"Deploy","message":"v2.1 is live! 🚀"}'</pre>
+        </div>
+
+        <div class="platforms">
+            <span class="platform-pill">📱 iPhone</span>
+            <span class="platform-pill">📱 iPad</span>
+            <span class="platform-pill">💻 Mac</span>
+            <span class="platform-pill">🗣 Siri Shortcuts</span>
+            <span class="platform-pill">🔒 Privacy-First</span>
+        </div>
+    </section>
+
+    <!-- USE CASES -->
+    <section class="use-cases">
+        <h2 class="section-title">Built for people who build things</h2>
+        <p class="section-subtitle">Blip fits into your workflow, whatever that looks like.</p>
+
+        <div class="use-case-grid">
+            <div class="use-case">
+                <span class="emoji">🏠</span>
+                <h3>Home Automation</h3>
+                <p>Motion alerts, leak detection, temperature drops. Tap a button on the notification to turn on lights or lock doors — without opening any app.</p>
+                <div class="example">"Motion detected in garage"<br>→ [Turn On Lights] [Lock Door]</div>
+            </div>
+
+            <div class="use-case">
+                <span class="emoji">🚀</span>
+                <h3>CI/CD Pipelines</h3>
+                <p>Know the moment your build passes, deploy finishes, or tests fail. Approve production deploys right from the notification.</p>
+                <div class="example">"Deploy v2.3.1 ready"<br>→ [Deploy to Prod] [Rollback]</div>
+            </div>
+
+            <div class="use-case">
+                <span class="emoji">🤖</span>
+                <h3>AI Coding Sessions</h3>
+                <p>Using Claude Code or Copilot? Get notified when tasks finish. Review changes and approve from your phone while AFK.</p>
+                <div class="example">"feat: add auth — 12 tests pass"<br>→ [Approve] [Reject]</div>
+            </div>
+
+            <div class="use-case">
+                <span class="emoji">📡</span>
+                <h3>Server Monitoring</h3>
+                <p>Uptime checks, error spikes, disk space warnings. Restart services or scale up with one tap.</p>
+                <div class="example">"API down — 502 for 2 min"<br>→ [Restart] [Scale Up]</div>
+            </div>
+
+            <div class="use-case">
+                <span class="emoji">📜</span>
+                <h3>Cron Jobs & Scripts</h3>
+                <p>Long-running backups, data exports, ML training. Get pinged when they're done — or when they crash.</p>
+                <div class="example">"Backup complete: 12.4 GB"<br>→ [View Log] [Dismiss]</div>
+            </div>
+
+            <div class="use-case">
+                <span class="emoji">🔔</span>
+                <h3>Anything with HTTP</h3>
+                <p>If it can make an HTTP request, it can send you a Blip. Python, Node, Go, Bash, Zapier, IFTTT, n8n — they all work.</p>
+                <div class="example">requests.post(url, json=<br>&nbsp;&nbsp;{"message": "Hello!"})</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TWO-WAY ACTIONS -->
+    <section>
+        <h2 class="section-title">Notifications that do things</h2>
+        <p class="section-subtitle">Action buttons that fire webhooks back. Your phone becomes a remote control.</p>
+
+        <div class="actions-demo">
+            <div class="phone-mockup">
+                <div class="phone-notif">
+                    <div>
+                        <span class="app-icon">b</span>
+                        <span class="app-name">BLIP</span>
+                    </div>
+                    <div class="notif-title">🚨 Motion Detected</div>
+                    <div class="notif-body">Front porch camera — 11:42 PM</div>
+                </div>
+                <div class="phone-actions">
+                    <div class="phone-btn green">💡 Lights On</div>
+                    <div class="phone-btn gray">🔒 Lock</div>
+                    <div class="phone-btn red">🔊 Alarm</div>
+                </div>
+            </div>
+
+            <div class="actions-text">
+                <h3>Close the loop</h3>
+                <p>Other push apps are one-way: they tell you something happened. Blip lets you <strong>respond</strong>.</p>
+                <ul>
+                    <li>Include <code>actions</code> in your webhook payload</li>
+                    <li>Each action has a label and a response webhook URL</li>
+                    <li>User taps the button, Blip fires the webhook</li>
+                    <li>No app to open. No dashboard to load. Just tap.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="code-card" style="max-width: 520px; margin: 32px auto 0;">
+            <div class="label">Payload with actions</div>
+            <pre>{
+  "title": "Motion Detected",
+  "message": "Front porch camera",
+  "actions": [
+    {
+      "id": "lights",
+      "label": "Turn On Lights",
+      "webhook": "<span class="url">http://ha.local/api/lights</span>"
+    },
+    {
+      "id": "lock",
+      "label": "Lock Door",
+      "webhook": "<span class="url">http://ha.local/api/lock</span>",
+      "destructive": true
+    }
+  ]
+}</pre>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section>
+        <h2 class="section-title">Everything you need, nothing you don't</h2>
+        <p class="section-subtitle">Blip is opinionated about simplicity.</p>
+
+        <div class="feature-grid">
+            <div class="feature">
+                <span class="icon">📲</span>
+                <h3>QR Code Sharing</h3>
+                <p>Share your webhook as a scannable QR code</p>
+            </div>
+            <div class="feature">
+                <span class="icon">🗣</span>
+                <h3>Siri Shortcuts</h3>
+                <p>3 intents for the Shortcuts app</p>
+            </div>
+            <div class="feature">
+                <span class="icon">📋</span>
+                <h3>10+ Templates</h3>
+                <p>GitHub, Docker, Python, Node.js...</p>
+            </div>
+            <div class="feature">
+                <span class="icon">🔍</span>
+                <h3>Search & Export</h3>
+                <p>Full-text search. JSON/CSV export.</p>
+            </div>
+            <div class="feature">
+                <span class="icon">🔐</span>
+                <h3>Privacy-First</h3>
+                <p>Messages never stored on server</p>
+            </div>
+            <div class="feature">
+                <span class="icon">🖥</span>
+                <h3>All Platforms</h3>
+                <p>Native iPhone, iPad, Mac app</p>
+            </div>
+            <div class="feature">
+                <span class="icon">⚡</span>
+                <h3>Quick Actions</h3>
+                <p>Long-press app icon shortcuts</p>
+            </div>
+            <div class="feature">
+                <span class="icon">🎯</span>
+                <h3>Per-Device Webhooks</h3>
+                <p>Target specific devices</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- API -->
+    <section class="api" id="docs">
+        <h2 class="section-title">API Reference</h2>
+        <p class="section-subtitle">Simple REST API. JSON in, push notification out.</p>
+
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/{secret}</span><span class="desc">Send notification (secret in URL)</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/send</span><span class="desc">Send notification (Bearer auth)</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/devices/register</span><span class="desc">Register device</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/devices</span><span class="desc">List devices</span></div>
+        <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/devices/{id}</span><span class="desc">Unregister device</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/secret/rotate</span><span class="desc">Rotate secret</span></div>
+
+        <h3 style="margin-top: 40px; font-size: 1.2rem;">Payload Fields</h3>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>title</code></td><td>string</td><td>Notification title</td></tr>
+                <tr><td><code>subtitle</code></td><td>string</td><td>Subtitle line</td></tr>
+                <tr><td><code>message</code></td><td>string</td><td>Body text</td></tr>
+                <tr><td><code>thread_id</code></td><td>string</td><td>Group by thread</td></tr>
+                <tr><td><code>sound</code></td><td>string</td><td>Notification sound</td></tr>
+                <tr><td><code>open_url</code></td><td>string</td><td>URL to open when tapped</td></tr>
+                <tr><td><code>image_url</code></td><td>string</td><td>Image attachment</td></tr>
+                <tr><td><code>interruption_level</code></td><td>string</td><td><code>passive</code> / <code>active</code> / <code>time-sensitive</code></td></tr>
+                <tr><td><code>actions</code></td><td>array</td><td>Action buttons with response webhooks (max 4)</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <h2>Ready to make it go blip?</h2>
+        <p>Free to try. Available on the App Store.</p>
+        <a href="#" class="cta-btn">Download on the App Store</a>
+    </section>
+
+</div>
+
+<footer>
+    <div class="container">
+        Blip by <a href="https://github.com/isylva">iSylva</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="#docs">API Docs</a> &middot; <a href="mailto:support@isylva.com">Support</a>
+    </div>
+</footer>
+
+</body>
+</html>

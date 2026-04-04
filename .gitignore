@@ -1,0 +1,22 @@
+# Xcode
+DerivedData/
+*.xcuserdata
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# macOS
+.DS_Store
+
+# Vapor
+db.sqlite
+
+# APNs keys (never commit)
+*.p8
+
+# Xcodegen
+ios/Blip.xcodeproj
