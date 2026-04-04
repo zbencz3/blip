@@ -5,7 +5,7 @@ enum Constants {
     static let apiBaseURL = "\(baseURL)/v1"
 
     enum Keychain {
-        static let service = "com.isylva.blip"
+        static let service = "com.isylva.boopsy"
         static let secretKey = "user_secret"
     }
 

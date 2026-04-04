@@ -30,7 +30,7 @@ struct NotificationController: RouteCollection {
             throw Abort(.badRequest, reason: "Missing secret.")
         }
         // Skip non-secret paths that might match this route
-        guard secret.hasPrefix("blp_usr_") else {
+        guard secret.hasPrefix("bps_usr_") else {
             throw Abort(.notFound)
         }
         var notification = try parseNotification(from: req)

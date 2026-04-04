@@ -159,7 +159,7 @@ struct SecretControllerTests {
             #expect(res.status == .ok)
             let response = try? res.content.decode(RotateSecretResponse.self)
             #expect(response?.secret != oldSecret)
-            #expect(response?.secret.hasPrefix("blp_usr_") == true)
+            #expect(response?.secret.hasPrefix("bps_usr_") == true)
         })
     }
 
@@ -277,7 +277,7 @@ struct NotificationControllerTests {
         let app = try await makeTestApp()
         defer { Task { try? await app.asyncShutdown() } }
 
-        try await app.test(.POST, "v1/blp_usr_invalid", beforeRequest: { req async throws in
+        try await app.test(.POST, "v1/bps_usr_invalid", beforeRequest: { req async throws in
             try req.content.encode(["message": "Hello"])
         }, afterResponse: { res async in
             #expect(res.status == .unauthorized)

@@ -1,7 +1,7 @@
 .PHONY: all build-server test-server run-server build-ios test-ios clean deploy
 
 # ============================================================
-# blip — top-level convenience targets
+# boopsy — top-level convenience targets
 # ============================================================
 
 all: build-server build-ios
@@ -47,7 +47,7 @@ regen-ios:
 # ---- Docker / Fly.io ---------------------------------------
 
 docker-build:
-	cd server && docker build -t blip-server .
+	cd server && docker build -t boopsy-server .
 
 deploy:
 	cd server && fly deploy

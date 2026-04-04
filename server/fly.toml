@@ -1,4 +1,4 @@
-app = "blip-server"
+app = "boopsy-server"
 primary_region = "iad"
 
 [build]

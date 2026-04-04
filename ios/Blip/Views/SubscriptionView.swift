@@ -15,7 +15,7 @@ struct SubscriptionView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: 8) {
-                        Text("Subscribe to\nkeep ") + Text("blip").foregroundColor(BlipColors.accentPurple).bold() + Text("'ing")
+                        Text("Subscribe to\nkeep ") + Text("bzap").foregroundColor(BlipColors.accentPurple).bold() + Text("'ing")
                     }
                     .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(BlipColors.textPrimary)
@@ -50,7 +50,7 @@ struct SubscriptionView: View {
                         planCard(
                             title: "Yearly",
                             price: "49.99/year",
-                            description: "Keeps your device blip'ing at a better price.",
+                            description: "Keeps your device bzap'ing at a better price.",
                             isSelected: selectedPlan == .yearly
                         ) {
                             selectedPlan = .yearly

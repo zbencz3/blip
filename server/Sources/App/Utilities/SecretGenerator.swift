@@ -7,6 +7,6 @@ enum SecretGenerator {
         let hex = bytes.withUnsafeBytes { buffer in
             buffer.map { String(format: "%02x", $0) }.joined()
         }
-        return "blp_usr_\(hex)"
+        return "bps_usr_\(hex)"
     }
 }

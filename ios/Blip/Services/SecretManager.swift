@@ -39,6 +39,6 @@ final class SecretManager {
     nonisolated static func generateSecret() -> String {
         let bytes = (0..<32).map { _ in UInt8.random(in: 0...255) }
         let hex = bytes.map { String(format: "%02x", $0) }.joined()
-        return "blp_usr_\(hex)"
+        return "bps_usr_\(hex)"
     }
 }

@@ -15,7 +15,7 @@ enum IntentError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notConfigured:
-            return "Blip is not configured. Please open the app first."
+            return "Bzap is not configured. Please open the app first."
         }
     }
 }
@@ -35,9 +35,9 @@ private func currentWebhookURL() throws -> String {
 // MARK: - SendNotificationIntent
 
 struct SendNotificationIntent: AppIntent {
-    nonisolated(unsafe) static var title: LocalizedStringResource = "Send Blip Notification"
+    nonisolated(unsafe) static var title: LocalizedStringResource = "Send Bzap Notification"
     nonisolated(unsafe) static var description: IntentDescription = IntentDescription(
-        "Send a push notification to your devices via Blip.",
+        "Send a push notification to your devices via Bzap.",
         categoryName: "Notifications"
     )
 
@@ -54,7 +54,7 @@ struct SendNotificationIntent: AppIntent {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         var body: [String: String] = ["message": message]
-        body["title"] = (notificationTitle?.isEmpty == false) ? notificationTitle! : "Blip"
+        body["title"] = (notificationTitle?.isEmpty == false) ? notificationTitle! : "Bzap"
         request.httpBody = try JSONEncoder().encode(body)
 
         let (_, response) = try await URLSession.shared.data(for: request)
@@ -69,9 +69,9 @@ struct SendNotificationIntent: AppIntent {
 // MARK: - CopyWebhookIntent
 
 struct CopyWebhookIntent: AppIntent {
-    nonisolated(unsafe) static var title: LocalizedStringResource = "Copy Blip Webhook URL"
+    nonisolated(unsafe) static var title: LocalizedStringResource = "Copy Bzap Webhook URL"
     nonisolated(unsafe) static var description: IntentDescription = IntentDescription(
-        "Copy your Blip webhook URL to the clipboard.",
+        "Copy your Bzap webhook URL to the clipboard.",
         categoryName: "Webhooks"
     )
 
@@ -91,9 +91,9 @@ struct CopyWebhookIntent: AppIntent {
 // MARK: - GetWebhookURLIntent
 
 struct GetWebhookURLIntent: AppIntent {
-    nonisolated(unsafe) static var title: LocalizedStringResource = "Get Blip Webhook URL"
+    nonisolated(unsafe) static var title: LocalizedStringResource = "Get Bzap Webhook URL"
     nonisolated(unsafe) static var description: IntentDescription = IntentDescription(
-        "Returns your Blip webhook URL so you can use it in other actions.",
+        "Returns your Bzap webhook URL so you can use it in other actions.",
         categoryName: "Webhooks"
     )
 

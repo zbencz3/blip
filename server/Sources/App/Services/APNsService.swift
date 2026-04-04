@@ -28,10 +28,10 @@ struct LiveAPNsService: APNsServiceProtocol {
             // Deterministic category ID based on sorted action IDs
             let actionIds = actions.map(\.id).sorted().joined(separator: "_")
             let hash = actionIds.djb2Hash
-            category = "BLIP_DYN_\(hash)"
+            category = "BOOPSY_DYN_\(hash)"
             blipActions = actions.map { BlipAction(id: $0.id, label: $0.label, webhook: $0.webhook, destructive: $0.destructive) }
         } else {
-            category = payload.openUrl != nil ? "BLIP_WITH_URL" : "BLIP_GENERAL"
+            category = payload.openUrl != nil ? "BOOPSY_WITH_URL" : "BOOPSY_GENERAL"
             blipActions = nil
         }
 
@@ -43,7 +43,7 @@ struct LiveAPNsService: APNsServiceProtocol {
             ),
             expiration: expiration,
             priority: .immediately,
-            topic: Environment.get("APNS_TOPIC") ?? "com.isylva.blip",
+            topic: Environment.get("APNS_TOPIC") ?? "com.isylva.boopsy",
             payload: BlipPayload(
                 openUrl: payload.openUrl,
                 imageUrl: payload.imageUrl,

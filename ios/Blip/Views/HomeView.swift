@@ -38,12 +38,12 @@ struct HomeView: View {
 
                     // Hero
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Welcome\nto ") + Text("blip").foregroundColor(BlipColors.accentPurple).bold()
+                        Text("Welcome\nto ") + Text("bzap").foregroundColor(BlipColors.accentPurple).bold()
                     }
                     .font(BlipFonts.heroTitle)
                     .foregroundStyle(BlipColors.textPrimary)
 
-                    Text("Make this device go **blip** by sending a notification with the API call below.")
+                    Text("Make this device go **bzap** by sending a notification with the API call below.")
                         .font(BlipFonts.body)
                         .foregroundStyle(BlipColors.textSecondary)
 

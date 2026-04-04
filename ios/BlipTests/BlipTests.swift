@@ -8,13 +8,13 @@ struct SecretGenerationTests {
     @Test("Secret has correct prefix")
     func secretPrefix() {
         let secret = SecretManager.generateSecret()
-        #expect(secret.hasPrefix("blp_usr_"))
+        #expect(secret.hasPrefix("bps_usr_"))
     }
 
     @Test("Secret has correct length")
     func secretLength() {
         let secret = SecretManager.generateSecret()
-        // blp_usr_ (8 chars) + 64 hex chars = 72
+        // bps_usr_ (8 chars) + 64 hex chars = 72
         #expect(secret.count == 72)
     }
 
@@ -51,7 +51,7 @@ struct DeviceModelTests {
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "device_token": "abc123",
             "device_name": "iPhone",
-            "device_secret": "blp_usr_test",
+            "device_secret": "bps_usr_test",
             "created_at": "2026-01-01T00:00:00Z"
         }
         """.data(using: .utf8)!
@@ -61,7 +61,7 @@ struct DeviceModelTests {
         let device = try decoder.decode(Device.self, from: json)
         #expect(device.deviceName == "iPhone")
         #expect(device.deviceToken == "abc123")
-        #expect(device.deviceSecret == "blp_usr_test")
+        #expect(device.deviceSecret == "bps_usr_test")
     }
 
     @Test("Device webhook URL constructed correctly")
@@ -71,12 +71,12 @@ struct DeviceModelTests {
             "id": "550e8400-e29b-41d4-a716-446655440000",
             "device_token": "abc123",
             "device_name": "iPhone",
-            "device_secret": "blp_usr_test"
+            "device_secret": "bps_usr_test"
         }
         """.data(using: .utf8)!
 
         let device = try JSONDecoder().decode(Device.self, from: json)
-        #expect(device.webhookURL?.contains("blp_usr_test") == true)
+        #expect(device.webhookURL?.contains("bps_usr_test") == true)
     }
 
     @Test("Device without secret has no webhook URL")

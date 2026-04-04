@@ -1,8 +1,8 @@
 import UserNotifications
 
 enum NotificationCategories {
-    static let generalCategory = "BLIP_GENERAL"
-    static let urlCategory = "BLIP_WITH_URL"
+    static let generalCategory = "BZAP_GENERAL"
+    static let urlCategory = "BZAP_WITH_URL"
 
     static func register() {
         let copyAction = UNNotificationAction(

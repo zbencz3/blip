@@ -20,6 +20,14 @@ struct BlipApp: App {
     @State private var pushManager = PushNotificationManager()
     @State private var notificationHandler = NotificationHandler()
 
+    private let sharedModelContainer: ModelContainer = {
+        do {
+            return try ModelContainer(for: NotificationRecord.self)
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
+    }()
+
     private var deviceName: String {
         #if canImport(UIKit)
         return UIDevice.current.name
@@ -58,6 +66,14 @@ struct BlipApp: App {
                     }
                 }
         }
-        .modelContainer(for: NotificationRecord.self)
+        .modelContainer(sharedModelContainer)
+
+        #if os(macOS)
+        MenuBarExtra("Blip", systemImage: "bell.badge.fill") {
+            MenuBarView(secretManager: secretManager)
+        }
+        .menuBarExtraStyle(.window)
+        .modelContainer(sharedModelContainer)
+        #endif
     }
 }

@@ -26,7 +26,7 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         SUPPORTS_MACCATALYST: YES
-        PRODUCT_BUNDLE_IDENTIFIER: com.isylva.blip
+        PRODUCT_BUNDLE_IDENTIFIER: com.isylva.boopsy
     entitlements:
       path: Blip/Blip.entitlements
       properties:
@@ -41,4 +41,16 @@ targets:
       - target: Blip
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.isylva.blip.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.isylva.boopsy.tests
+
+  BlipUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: BlipUITests
+    dependencies:
+      - target: Blip
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.isylva.boopsy.uitests
+        TEST_TARGET_NAME: Blip

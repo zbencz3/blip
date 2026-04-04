@@ -11,7 +11,7 @@ struct AboutView: View {
             VStack(spacing: 20) {
                 Spacer()
 
-                Text("blip \(version)")
+                Text("bzap \(version)")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(BlipColors.textPrimary)
 
@@ -20,7 +20,7 @@ struct AboutView: View {
                     .fill(BlipColors.accentPurple)
                     .frame(width: 120, height: 120)
                     .overlay(
-                        Text("blip")
+                        Text("bzap")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundStyle(.white)
                     )
@@ -29,7 +29,7 @@ struct AboutView: View {
                 Spacer()
 
                 VStack(spacing: 4) {
-                    Text("blip \(version) (\(build))")
+                    Text("bzap \(version) (\(build))")
                         .font(BlipFonts.caption)
                         .foregroundStyle(BlipColors.textSecondary)
                     Text("Made with ❤️ by iSylva")

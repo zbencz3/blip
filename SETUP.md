@@ -1,6 +1,6 @@
-# Blip — Setup Guide
+# Bzap — Setup Guide
 
-Blip is a push-notification relay service: the iOS app registers devices and generates webhook URLs; anyone who POSTs to those URLs gets a push notification on your device. No accounts, no servers to babysit (beyond one tiny Fly.io machine).
+Bzap is a push-notification relay service: the iOS app registers devices and generates webhook URLs; anyone who POSTs to those URLs gets a push notification on your device. No accounts, no servers to babysit (beyond one tiny Fly.io machine).
 
 ---
 
@@ -73,7 +73,7 @@ You need an active Apple Developer account ($99/year).
 
 1. Log in to [developer.apple.com](https://developer.apple.com) → Certificates, IDs & Profiles → Identifiers.
 2. Click **+** → App IDs → App.
-3. Set the Bundle ID to `com.isylva.blip` (or your own — keep it consistent with `project.yml`).
+3. Set the Bundle ID to `com.isylva.bzap` (or your own — keep it consistent with `project.yml`).
 4. Under Capabilities, tick **Push Notifications**.
 5. Save.
 
@@ -82,7 +82,7 @@ You need an active Apple Developer account ($99/year).
 This is a single key that works for all your apps — you only need one.
 
 1. Certificates, IDs & Profiles → **Keys** → **+**.
-2. Name it (e.g. "Blip APNs Key"), tick **Apple Push Notifications service (APNs)**.
+2. Name it (e.g. "Bzap APNs Key"), tick **Apple Push Notifications service (APNs)**.
 3. Register → Download the `.p8` file. **Store it safely — Apple will not let you download it again.**
 4. Note the **Key ID** (10 characters) shown on the key detail page.
 5. Note your **Team ID** from the top-right of the developer portal (also 10 characters).
@@ -90,7 +90,7 @@ This is a single key that works for all your apps — you only need one.
 ### 3c. Create a Provisioning Profile
 
 1. Profiles → **+** → iOS App Development.
-2. Select your App ID (`com.isylva.blip`).
+2. Select your App ID (`com.isylva.bzap`).
 3. Select your certificate and test devices.
 4. Download and double-click to install.
 
@@ -107,7 +107,7 @@ Copy `.env.example` to `.env` in the `server/` directory and fill in:
 | `APNS_KEY_PATH` | Yes (prod) | Absolute path to your `.p8` file, e.g. `/secrets/AuthKey_XXXXXXXXXX.p8` |
 | `APNS_KEY_ID` | Yes (prod) | 10-char Key ID from Apple Developer portal |
 | `APNS_TEAM_ID` | Yes (prod) | 10-char Team ID from Apple Developer portal |
-| `APNS_TOPIC` | Yes (prod) | Bundle ID of the iOS app: `com.isylva.blip` |
+| `APNS_TOPIC` | Yes (prod) | Bundle ID of the iOS app: `com.isylva.bzap` |
 | `LOG_LEVEL` | No | `debug` locally, `info` in production |
 | `APP_ENV` | No | `development` locally, `production` on Fly.io |
 | `BASE_URL` | No | Public base URL used in webhook responses, e.g. `https://api.yourdomain.com` |
@@ -129,7 +129,7 @@ For production on Fly.io the SQLite file lives on a persistent volume (see secti
 The bundle ID is set in `ios/project.yml`:
 
 ```yaml
-PRODUCT_BUNDLE_IDENTIFIER: com.isylva.blip
+PRODUCT_BUNDLE_IDENTIFIER: com.isylva.bzap
 ```
 
 Change this to match your App ID if you used a different one.
@@ -183,10 +183,10 @@ fly auth login
 
 # Launch the app (from the server/ directory)
 cd server
-fly launch --name blip-server --region iad --no-deploy
+fly launch --name bzap-server --region iad --no-deploy
 
 # Create a persistent volume for the SQLite database
-fly volumes create blip_data --size 1 --region iad
+fly volumes create bzap_data --size 1 --region iad
 
 # Mount it — add this to fly.toml under [mounts]:
 ```
@@ -195,7 +195,7 @@ Add to `server/fly.toml`:
 
 ```toml
 [[mounts]]
-  source      = "blip_data"
+  source      = "bzap_data"
   destination = "/data"
 ```
 
@@ -212,7 +212,7 @@ app.databases.use(.sqlite(.file("/data/db.sqlite")), as: .sqlite)
 fly secrets set APNS_PRIVATE_KEY="$(cat /path/to/AuthKey_XXXXXXXXXX.p8)"
 fly secrets set APNS_KEY_ID=XXXXXXXXXX
 fly secrets set APNS_TEAM_ID=XXXXXXXXXX
-fly secrets set APNS_TOPIC=com.isylva.blip
+fly secrets set APNS_TOPIC=com.isylva.bzap
 fly secrets set BASE_URL=https://api.yourdomain.com
 fly secrets set LOG_LEVEL=info
 ```
@@ -353,7 +353,7 @@ Called automatically by the iOS app on launch.
 curl -X POST https://api.yourdomain.com/v1/devices/register \
   -H 'Content-Type: application/json' \
   -d '{
-    "secret": "blp_usr_<your-secret>",
+    "secret": "bps_usr_<your-secret>",
     "device_token": "<APNs-device-token>",
     "device_name": "My iPhone"
   }'
@@ -365,7 +365,7 @@ Response:
 {
   "id": "uuid",
   "device_name": "My iPhone",
-  "device_secret": "blp_usr_<device-specific-secret>",
+  "device_secret": "bps_usr_<device-specific-secret>",
   "created_at": "2026-04-04T12:00:00Z"
 }
 ```
@@ -374,20 +374,20 @@ Response:
 
 ```bash
 curl https://api.yourdomain.com/v1/devices \
-  -H 'Authorization: Bearer blp_usr_<your-secret>'
+  -H 'Authorization: Bearer bps_usr_<your-secret>'
 ```
 
 ### Delete a Device
 
 ```bash
 curl -X DELETE https://api.yourdomain.com/v1/devices/<device-uuid> \
-  -H 'Authorization: Bearer blp_usr_<your-secret>'
+  -H 'Authorization: Bearer bps_usr_<your-secret>'
 ```
 
 ### Send a Notification — Secret in URL
 
 ```bash
-curl -X POST https://api.yourdomain.com/v1/blp_usr_<your-secret> \
+curl -X POST https://api.yourdomain.com/v1/bps_usr_<your-secret> \
   -H 'Content-Type: application/json' \
   -d '{"title": "Hello", "message": "World"}'
 ```
@@ -396,7 +396,7 @@ curl -X POST https://api.yourdomain.com/v1/blp_usr_<your-secret> \
 
 ```bash
 curl -X POST https://api.yourdomain.com/v1/send \
-  -H 'Authorization: Bearer blp_usr_<your-secret>' \
+  -H 'Authorization: Bearer bps_usr_<your-secret>' \
   -H 'Content-Type: application/json' \
   -d '{"title": "Hello", "message": "World"}'
 ```
@@ -404,7 +404,7 @@ curl -X POST https://api.yourdomain.com/v1/send \
 ### Send a Plain-Text Notification
 
 ```bash
-curl -X POST https://api.yourdomain.com/v1/blp_usr_<your-secret> \
+curl -X POST https://api.yourdomain.com/v1/bps_usr_<your-secret> \
   -H 'Content-Type: text/plain' \
   -d 'Hello from curl'
 ```
@@ -412,7 +412,7 @@ curl -X POST https://api.yourdomain.com/v1/blp_usr_<your-secret> \
 ### Full Payload Example
 
 ```bash
-curl -X POST https://api.yourdomain.com/v1/blp_usr_<your-secret> \
+curl -X POST https://api.yourdomain.com/v1/bps_usr_<your-secret> \
   -H 'Content-Type: application/json' \
   -d '{
     "title": "Build failed",
@@ -448,15 +448,15 @@ Invalidates the old secret and returns a new one with a fresh webhook URL.
 
 ```bash
 curl -X POST https://api.yourdomain.com/v1/secret/rotate \
-  -H 'Authorization: Bearer blp_usr_<current-secret>'
+  -H 'Authorization: Bearer bps_usr_<current-secret>'
 ```
 
 Response:
 
 ```json
 {
-  "secret": "blp_usr_<new-secret>",
-  "webhook_url": "https://api.yourdomain.com/v1/blp_usr_<new-secret>"
+  "secret": "bps_usr_<new-secret>",
+  "webhook_url": "https://api.yourdomain.com/v1/bps_usr_<new-secret>"
 }
 ```
 
