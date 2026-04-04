@@ -41,6 +41,6 @@ struct SettingsRow: View {
                     .foregroundStyle(BlipColors.textSecondary)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 10)
     }
 }

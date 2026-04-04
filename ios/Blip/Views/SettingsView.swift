@@ -50,17 +50,27 @@ struct SettingsView: View {
 
                         // Docs, Guides, Send Test
                         SettingsSectionCard {
-                            SettingsRow(
-                                icon: "doc.text.fill",
-                                iconColor: .orange,
-                                title: "Documentation"
-                            )
+                            Button {
+                                openURL("https://zbencz3.github.io/blip/#docs")
+                            } label: {
+                                SettingsRow(
+                                    icon: "doc.text.fill",
+                                    iconColor: .orange,
+                                    title: "Documentation",
+                                    showExternalLink: true
+                                )
+                            }
                             Divider().background(BlipColors.cardBorder)
-                            SettingsRow(
-                                icon: "graduationcap.fill",
-                                iconColor: .green,
-                                title: "Guides"
-                            )
+                            Button {
+                                openURL("https://zbencz3.github.io/blip/")
+                            } label: {
+                                SettingsRow(
+                                    icon: "graduationcap.fill",
+                                    iconColor: .green,
+                                    title: "Guides",
+                                    showExternalLink: true
+                                )
+                            }
                             Divider().background(BlipColors.cardBorder)
                             Button { showTemplates = true } label: {
                                 SettingsRow(
@@ -147,5 +157,14 @@ struct SettingsView: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func openURL(_ string: String) {
+        guard let url = URL(string: string) else { return }
+        #if canImport(UIKit)
+        UIApplication.shared.open(url)
+        #else
+        NSWorkspace.shared.open(url)
+        #endif
     }
 }
