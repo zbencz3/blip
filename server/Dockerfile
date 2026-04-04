@@ -5,28 +5,19 @@ FROM swift:6.0-jammy AS build
 
 WORKDIR /build
 
-# Copy package manifest and resolve dependencies
 COPY Package.swift .
 RUN swift package resolve
 
-# Copy source and tests (SPM validates all targets)
 COPY Sources Sources
 RUN mkdir -p Tests/AppTests && echo "// placeholder" > Tests/AppTests/Placeholder.swift
 RUN swift build -c release --product App
 
 # ================================
-# Runtime image
+# Runtime image (includes Swift runtime libs)
 # ================================
-FROM ubuntu:22.04 AS runtime
+FROM swift:6.0-jammy-slim
 
 RUN apt-get update && apt-get install -y \
-    libatomic1 \
-    libcurl4 \
-    libxml2 \
-    libc6 \
-    libgcc-s1 \
-    libstdc++6 \
-    zlib1g \
     libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
