@@ -15,15 +15,11 @@ struct AboutView: View {
                     .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(BlipColors.textPrimary)
 
-                // App icon placeholder
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(BlipColors.accentPurple)
+                // App icon
+                Image("AppIcon")
+                    .resizable()
                     .frame(width: 120, height: 120)
-                    .overlay(
-                        Text("bzap")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(.white)
-                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
                     .shadow(color: BlipColors.accentPurple.opacity(0.4), radius: 20)
 
                 Spacer()
