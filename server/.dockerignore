@@ -1,0 +1,5 @@
+.build
+*.p8
+db.sqlite
+.DS_Store
+Tests

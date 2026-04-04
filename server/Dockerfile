@@ -5,13 +5,9 @@ FROM swift:6.0-jammy AS build
 
 WORKDIR /build
 
-# Copy package manifests and resolve dependencies first (better layer caching)
-COPY Package.swift Package.resolved ./
+# Copy entire source (Package.resolved may not exist)
+COPY . .
 RUN swift package resolve
-
-# Copy the rest of the source and build in release mode
-COPY Sources Sources
-COPY Tests Tests
 RUN swift build -c release --product App
 
 # ================================
@@ -33,7 +29,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy the built executable and any resources
+# Copy the built executable
 COPY --from=build /build/.build/release/App ./App
 
 EXPOSE 8080
