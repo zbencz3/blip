@@ -9,8 +9,9 @@ WORKDIR /build
 COPY Package.swift .
 RUN swift package resolve
 
-# Copy only source code (not tests)
+# Copy source and tests (SPM validates all targets)
 COPY Sources Sources
+RUN mkdir -p Tests/AppTests && echo "// placeholder" > Tests/AppTests/Placeholder.swift
 RUN swift build -c release --product App
 
 # ================================
