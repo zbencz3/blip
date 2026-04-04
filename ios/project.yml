@@ -27,6 +27,10 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         SUPPORTS_MACCATALYST: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.isylva.boopsy
+    info:
+      properties:
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     entitlements:
       path: Blip/Blip.entitlements
       properties:

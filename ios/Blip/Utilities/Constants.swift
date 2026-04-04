@@ -1,7 +1,12 @@
 import Foundation
 
 enum Constants {
-    static let baseURL = "http://localhost:8080"
+    // TODO: Change to production HTTPS URL before release
+    #if DEBUG
+    static let baseURL = "http://192.168.1.145:8080"
+    #else
+    static let baseURL = "https://your-server.fly.dev"
+    #endif
     static let apiBaseURL = "\(baseURL)/v1"
 
     enum Keychain {

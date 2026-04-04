@@ -20,11 +20,22 @@ func configure(_ app: Application) async throws {
 
 private func configureAPNs(_ app: Application) {
     guard let keyID = Environment.get("APNS_KEY_ID"),
-          let teamID = Environment.get("APNS_TEAM_ID"),
-          let keyPath = Environment.get("APNS_KEY_PATH"),
-          let keyData = try? String(contentsOfFile: keyPath, encoding: .utf8)
+          let teamID = Environment.get("APNS_TEAM_ID")
     else {
-        app.logger.warning("APNs not configured — using mock service. Set APNS_KEY_ID, APNS_TEAM_ID, APNS_KEY_PATH to enable.")
+        app.logger.warning("APNs not configured — using mock service. Set APNS_KEY_ID, APNS_TEAM_ID, and APNS_PRIVATE_KEY or APNS_KEY_PATH to enable.")
+        app.apnsServiceCustom = MockAPNsService()
+        return
+    }
+
+    // Accept key as inline env var (APNS_PRIVATE_KEY) or file path (APNS_KEY_PATH)
+    let keyData: String
+    if let inlineKey = Environment.get("APNS_PRIVATE_KEY") {
+        keyData = inlineKey
+    } else if let keyPath = Environment.get("APNS_KEY_PATH"),
+              let fileData = try? String(contentsOfFile: keyPath, encoding: .utf8) {
+        keyData = fileData
+    } else {
+        app.logger.warning("APNs key not found — set APNS_PRIVATE_KEY (inline) or APNS_KEY_PATH (file). Using mock service.")
         app.apnsServiceCustom = MockAPNsService()
         return
     }
