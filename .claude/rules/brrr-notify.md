@@ -1,7 +1,7 @@
 When completing a long-running background task or when the user might not be watching, send a push notification:
 
 ```bash
-curl -s -X POST https://api.brrr.now/v1/br_usr_dab89ba5ea712cc6d31ba7ca0f46eecbafa02805642a4d5f683943ce559e3c53 \
+curl -s -X POST https://bzap-server.onrender.com/v1/bps_usr_5133a3edaa97bc2e2c60ab80dc8ae4a5a65cfcf23678e4988288426f2ecca608 \
   -H 'Content-Type: application/json' \
   -d '{"title":"Claude Code","message":"Done: <brief description>"}'
 ```
