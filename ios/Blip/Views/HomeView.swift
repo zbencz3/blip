@@ -4,6 +4,7 @@ struct HomeView: View {
     @State var viewModel: HomeViewModel
     @State private var showSettings = false
     @State private var showNotifications = false
+    @State private var showCopied = false
 
     var body: some View {
         ZStack {
@@ -34,52 +35,121 @@ struct HomeView: View {
                         }
                     }
 
-                    Spacer().frame(height: 40)
+                    Spacer().frame(height: 20)
 
-                    // Hero
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Welcome\nto ") + Text("bzap").foregroundColor(BlipColors.accentPurple).bold()
+                    // Hero with lightning bolt
+                    HStack(spacing: 12) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 36))
+                            .foregroundStyle(BlipColors.accentPurple)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("bzap")
+                                .font(.system(size: 44, weight: .black, design: .monospaced))
+                                .foregroundStyle(BlipColors.accentPurple)
+                            Text("push notifications via webhook")
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundStyle(BlipColors.textSecondary)
+                        }
                     }
-                    .font(BlipFonts.heroTitle)
-                    .foregroundStyle(BlipColors.textPrimary)
 
-                    Text("Make this device go **bzap** by sending a notification with the API call below.")
-                        .font(BlipFonts.body)
-                        .foregroundStyle(BlipColors.textSecondary)
+                    // Status indicator
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(.green)
+                            .frame(width: 8, height: 8)
+                        Text("Ready to receive")
+                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.green)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.green.opacity(0.1))
+                    .clipShape(Capsule())
 
                     // Curl snippet
-                    CurlSnippetCard(command: viewModel.curlCommand) {
-                        await viewModel.sendTest()
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("$")
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundStyle(BlipColors.accentPurple)
+                            Text("Quick start")
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundStyle(BlipColors.textSecondary)
+                            Spacer()
+                            Button {
+                                Task { await viewModel.sendTest() }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "paperplane.fill")
+                                    Text("Send Test")
+                                }
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(BlipColors.textPrimary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(BlipColors.cardBorder)
+                                .clipShape(Capsule())
+                            }
+                        }
+
+                        Text(viewModel.curlCommand)
+                            .font(.system(size: 13, design: .monospaced))
+                            .foregroundStyle(BlipColors.textCode)
+                            .lineLimit(4)
+                            .textSelection(.enabled)
                     }
+                    .padding(16)
+                    .background(BlipColors.cardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(BlipColors.cardBorder, lineWidth: 0.5)
+                    )
 
                     // Action buttons
-                    HStack(spacing: 12) {
-                        ActionButton(title: "Copy", icon: "doc.on.doc", style: .primary) {
+                    HStack(spacing: 10) {
+                        Button {
                             viewModel.copyToClipboard()
+                            showCopied = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                showCopied = false
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                                Text(showCopied ? "Copied!" : "Copy")
+                            }
+                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(BlipColors.accentGreen)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
+
                         ShareLink(item: viewModel.curlCommand) {
-                            Label("Share", systemImage: "square.and.arrow.up")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.black)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            HStack(spacing: 6) {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("Share")
+                            }
+                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
                     }
 
-                    // Read docs link
-                    Button {
-                        // TODO: Set documentation URL when available
-                    } label: {
-                        Label("Read docs", systemImage: "doc.text")
-                            .font(BlipFonts.body)
-                            .foregroundStyle(BlipColors.textSecondary)
+                    // Features row
+                    HStack(spacing: 12) {
+                        featurePill(icon: "bolt.fill", text: "Actions")
+                        featurePill(icon: "qrcode", text: "QR Code")
+                        featurePill(icon: "mic.fill", text: "Siri")
+                        featurePill(icon: "doc.text", text: "Templates")
                     }
-                    .disabled(true)
-                    .opacity(0.5)
 
-                    Spacer().frame(height: 20)
+                    Spacer().frame(height: 10)
 
                     TrialBannerView()
                 }
@@ -92,5 +162,24 @@ struct HomeView: View {
         .sheet(isPresented: $showNotifications) {
             RecentNotificationsView()
         }
+    }
+
+    private func featurePill(icon: String, text: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundStyle(BlipColors.accentPurple)
+            Text(text)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(BlipColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(BlipColors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(BlipColors.cardBorder, lineWidth: 0.5)
+        )
     }
 }
