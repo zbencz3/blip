@@ -5,9 +5,12 @@ FROM swift:6.0-jammy AS build
 
 WORKDIR /build
 
-# Copy entire source (Package.resolved may not exist)
-COPY . .
+# Copy package manifest and resolve dependencies
+COPY Package.swift .
 RUN swift package resolve
+
+# Copy only source code (not tests)
+COPY Sources Sources
 RUN swift build -c release --product App
 
 # ================================
@@ -15,7 +18,6 @@ RUN swift build -c release --product App
 # ================================
 FROM ubuntu:22.04 AS runtime
 
-# Install Swift runtime dependencies
 RUN apt-get update && apt-get install -y \
     libatomic1 \
     libcurl4 \
@@ -29,7 +31,6 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy the built executable
 COPY --from=build /build/.build/release/App ./App
 
 EXPOSE 8080
