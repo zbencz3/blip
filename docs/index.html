@@ -6,98 +6,122 @@
     <title>Bzap — Push Notifications via Webhook</title>
     <style>
         :root {
-            --bg: #000; --card: #1c1c1e; --border: #2a2a2c;
-            --purple: #ff3b5c; --green: #a6ff00; --text: #fff; --muted: #8e8e93;
-            --red: #ff453a; --blue: #5fa8ff; --orange: #ff9f0a;
+            --bg: #0a0a0a; --card: #141416; --border: #222225;
+            --accent: #ff3b5c; --green: #a6ff00; --text: #f0f0f0; --muted: #737380;
+            --red: #ff453a; --blue: #5fa8ff; --code: #00d97e;
+            --mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', Menlo, monospace;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
-        .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+        section { padding: 80px 0; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
 
         /* Hero */
-        .hero { text-align: center; padding: 100px 0 60px; }
-        .hero h1 { font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
-        .hero h1 span { color: var(--purple); }
-        .hero .tagline { font-size: 1.3rem; color: var(--muted); max-width: 480px; margin: 0 auto 40px; }
-        .platforms { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
-        .platform-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 99px; font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+        .hero { padding: 80px 0 60px; }
+        .hero-inner { display: flex; align-items: center; gap: 20px; margin-bottom: 16px; }
+        .hero-bolt { font-size: 48px; color: var(--accent); }
+        .hero-name { font-family: var(--mono); font-size: clamp(3rem, 10vw, 5rem); font-weight: 900; color: var(--accent); letter-spacing: -2px; line-height: 1; }
+        .hero-tagline { font-family: var(--mono); font-size: clamp(0.8rem, 2vw, 0.95rem); color: var(--muted); margin-bottom: 40px; }
+        .hero-tagline span { color: var(--text); }
 
-        /* Code block */
-        .code-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin: 32px auto; text-align: left; max-width: 600px; position: relative; }
-        .code-card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; font-weight: 600; }
-        .code-card pre { font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.85rem; color: var(--green); overflow-x: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.7; }
-        .code-card pre .url { color: var(--purple); }
+        /* Status pill */
+        .status { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(166,255,0,0.08); border: 1px solid rgba(166,255,0,0.2); border-radius: 99px; font-family: var(--mono); font-size: 0.8rem; color: var(--green); margin-bottom: 32px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Terminal code block */
+        .terminal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; max-width: 640px; }
+        .terminal-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .terminal-dot.r { background: #ff5f57; }
+        .terminal-dot.y { background: #febc2e; }
+        .terminal-dot.g { background: #28c840; }
+        .terminal-title { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); margin-left: 8px; }
+        .terminal pre { font-family: var(--mono); font-size: 0.85rem; padding: 16px 20px; line-height: 1.8; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+        .terminal .prompt { color: var(--accent); }
+        .terminal .cmd { color: var(--text); }
+        .terminal .url { color: var(--green); }
+        .terminal .str { color: var(--blue); }
+        .terminal .response { color: var(--muted); font-style: italic; }
+
+        /* Platform badges */
+        .platforms { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 32px; }
+        .platform { font-family: var(--mono); font-size: 0.75rem; padding: 5px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); }
 
         /* Section headers */
-        .section-title { font-size: 2.2rem; font-weight: 700; text-align: center; margin-bottom: 12px; letter-spacing: -0.5px; }
-        .section-subtitle { text-align: center; color: var(--muted); font-size: 1.1rem; margin-bottom: 40px; max-width: 500px; margin-left: auto; margin-right: auto; }
-        section { padding: 80px 0; }
+        .section-label { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
+        .section-title { font-size: 2rem; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+        .section-subtitle { color: var(--muted); font-size: 1rem; margin-bottom: 40px; max-width: 520px; }
 
         /* Use Cases */
-        .use-cases { background: linear-gradient(180deg, transparent 0%, rgba(140,92,245,0.03) 100%); }
-        .use-case-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-        .use-case { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px; transition: border-color 0.2s, transform 0.2s; }
-        .use-case:hover { border-color: var(--purple); transform: translateY(-2px); }
-        .use-case .emoji { font-size: 2rem; margin-bottom: 12px; display: block; }
-        .use-case h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
-        .use-case p { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
-        .use-case .example { margin-top: 12px; padding: 10px 14px; background: rgba(0,0,0,0.3); border-radius: 10px; font-family: 'SF Mono', monospace; font-size: 0.75rem; color: var(--green); line-height: 1.5; }
+        .use-case-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+        .use-case { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; transition: border-color 0.2s, transform 0.15s; }
+        .use-case:hover { border-color: var(--accent); transform: translateY(-1px); }
+        .use-case .uc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .use-case .uc-icon { font-size: 1.4rem; }
+        .use-case h3 { font-size: 1rem; font-weight: 700; }
+        .use-case p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
+        .use-case .example { font-family: var(--mono); font-size: 0.72rem; padding: 8px 12px; background: rgba(0,0,0,0.4); border-radius: 6px; color: var(--code); line-height: 1.6; }
 
         /* Two-way actions */
-        .actions-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
-        @media (max-width: 640px) { .actions-demo { grid-template-columns: 1fr; } }
-        .phone-mockup { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 16px; max-width: 320px; margin: 0 auto; }
-        .phone-notif { background: rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-        .phone-notif .app-icon { display: inline-flex; width: 20px; height: 20px; background: var(--purple); border-radius: 5px; margin-right: 6px; vertical-align: middle; align-items: center; justify-content: center; font-size: 10px; }
-        .phone-notif .app-name { font-size: 0.75rem; color: var(--muted); font-weight: 600; vertical-align: middle; }
-        .phone-notif .notif-title { font-weight: 700; font-size: 0.95rem; margin-top: 8px; }
-        .phone-notif .notif-body { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
-        .phone-actions { display: flex; gap: 6px; }
-        .phone-btn { flex: 1; padding: 10px 6px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; border: none; text-align: center; }
-        .phone-btn.green { background: var(--green); color: #000; }
-        .phone-btn.gray { background: #2c2c2e; color: var(--text); }
-        .phone-btn.red { background: var(--red); color: var(--text); }
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+        @media (max-width: 640px) { .actions-grid { grid-template-columns: 1fr; } }
+
+        .notif-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; max-width: 340px; margin: 0 auto; }
+        .notif-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .notif-icon { width: 24px; height: 24px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; }
+        .notif-app { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .notif-time { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); margin-left: auto; }
+        .notif-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 2px; }
+        .notif-body { color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; }
+        .notif-actions { display: flex; gap: 6px; }
+        .notif-btn { flex: 1; padding: 10px 8px; border-radius: 10px; font-family: var(--mono); font-size: 0.72rem; font-weight: 700; border: none; text-align: center; cursor: default; }
+        .notif-btn.primary { background: var(--green); color: #000; }
+        .notif-btn.secondary { background: #2c2c2e; color: var(--text); }
+        .notif-btn.danger { background: var(--red); color: white; }
 
         .actions-text h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 12px; }
-        .actions-text p { color: var(--muted); font-size: 0.95rem; margin-bottom: 16px; }
+        .actions-text p { color: var(--muted); font-size: 0.92rem; margin-bottom: 16px; line-height: 1.6; }
         .actions-text ul { list-style: none; }
-        .actions-text li { padding: 6px 0; font-size: 0.9rem; color: var(--muted); }
-        .actions-text li::before { content: "→ "; color: var(--purple); font-weight: 700; }
+        .actions-text li { padding: 5px 0; font-family: var(--mono); font-size: 0.82rem; color: var(--muted); }
+        .actions-text li::before { content: "$ "; color: var(--accent); font-weight: 700; }
 
         /* Features */
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
-        .feature { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center; }
-        .feature .icon { font-size: 1.8rem; margin-bottom: 10px; display: block; }
-        .feature h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
-        .feature p { font-size: 0.8rem; color: var(--muted); }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        .feature { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; transition: border-color 0.2s; }
+        .feature:hover { border-color: var(--accent); }
+        .feature .f-icon { font-size: 1.6rem; margin-bottom: 8px; display: block; }
+        .feature h3 { font-family: var(--mono); font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; }
+        .feature p { font-size: 0.75rem; color: var(--muted); }
 
         /* API */
-        .endpoint { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: baseline; gap: 12px; }
-        .method { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; font-family: 'SF Mono', monospace; letter-spacing: 0.5px; flex-shrink: 0; }
-        .method.post { background: rgba(106,220,80,0.15); color: #6fdd5e; }
-        .method.get { background: rgba(95,168,255,0.15); color: #5fa8ff; }
-        .method.delete { background: rgba(255,69,58,0.15); color: #ff6b6b; }
-        .path { font-family: 'SF Mono', monospace; font-size: 0.88rem; }
-        .desc { color: var(--muted); font-size: 0.82rem; margin-left: auto; }
+        .endpoint { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; font-family: var(--mono); }
+        .method { padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px; flex-shrink: 0; }
+        .method.post { background: rgba(166,255,0,0.12); color: var(--green); }
+        .method.get { background: rgba(95,168,255,0.12); color: var(--blue); }
+        .method.delete { background: rgba(255,69,58,0.12); color: var(--red); }
+        .path { font-size: 0.85rem; }
+        .desc { color: var(--muted); font-size: 0.75rem; margin-left: auto; font-family: -apple-system, sans-serif; }
 
-        /* Payload table */
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
-        th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        td code { background: rgba(140,92,245,0.1); color: var(--purple); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 0.8rem; }
+        /* Table */
+        .table-wrap { overflow-x: auto; margin: 24px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+        th { color: var(--muted); font-family: var(--mono); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        td code { background: rgba(255,59,92,0.08); color: var(--accent); padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-size: 0.78rem; }
 
         /* CTA */
         .cta { text-align: center; padding: 80px 0; }
-        .cta h2 { font-size: 2rem; font-weight: 700; margin-bottom: 16px; }
+        .cta h2 { font-family: var(--mono); font-size: 1.8rem; font-weight: 800; margin-bottom: 12px; }
         .cta p { color: var(--muted); margin-bottom: 32px; }
-        .cta-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: var(--green); color: #000; font-weight: 700; font-size: 1rem; border-radius: 14px; text-decoration: none; transition: transform 0.2s; }
-        .cta-btn:hover { transform: scale(1.03); text-decoration: none; }
+        .cta-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: var(--accent); color: white; font-family: var(--mono); font-weight: 700; font-size: 0.95rem; border-radius: 10px; text-decoration: none; transition: transform 0.15s, opacity 0.15s; }
+        .cta-btn:hover { transform: scale(1.02); opacity: 0.9; text-decoration: none; }
 
         /* Footer */
-        footer { text-align: center; padding: 40px 0; color: var(--muted); font-size: 0.82rem; border-top: 1px solid var(--border); }
-        footer a { color: var(--purple); text-decoration: none; }
-        a { color: var(--purple); text-decoration: none; }
+        footer { text-align: center; padding: 40px 0; color: var(--muted); font-size: 0.78rem; border-top: 1px solid var(--border); }
+        footer a { color: var(--accent); }
     </style>
 </head>
 <body>
@@ -106,69 +130,97 @@
 
     <!-- HERO -->
     <section class="hero">
-        <h1>Make it go <span>bzap</span></h1>
-        <p class="tagline">Push notifications to your Apple devices with a simple webhook. No signup. No dashboard. Just curl.</p>
+        <div class="hero-inner">
+            <span class="hero-bolt">⚡</span>
+            <span class="hero-name">bzap</span>
+        </div>
+        <p class="hero-tagline"><span>push notifications</span> via webhook</p>
 
-        <div class="code-card">
-            <div class="label">One line. That's it.</div>
-            <pre>curl -X POST <span class="url">https://api.bzap.app/v1/your_secret</span> \
-  -d '{"title":"Deploy","message":"v2.1 is live! 🚀"}'</pre>
+        <div class="status">
+            <span class="status-dot"></span>
+            one curl command away
+        </div>
+
+        <div class="terminal">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">terminal</span>
+            </div>
+            <pre><span class="prompt">$</span> <span class="cmd">curl -X POST</span> <span class="url">https://bzap-server.onrender.com/v1/your_secret</span> \
+  <span class="cmd">-d</span> <span class="str">'{"title":"Deploy","message":"v2.1 is live! 🚀"}'</span>
+
+<span class="response">{"message":"Notification sent"}</span></pre>
         </div>
 
         <div class="platforms">
-            <span class="platform-pill">📱 iPhone</span>
-            <span class="platform-pill">📱 iPad</span>
-            <span class="platform-pill">💻 Mac</span>
-            <span class="platform-pill">🗣 Siri Shortcuts</span>
-            <span class="platform-pill">🔒 Privacy-First</span>
+            <span class="platform">iPhone</span>
+            <span class="platform">iPad</span>
+            <span class="platform">Mac</span>
+            <span class="platform">Siri Shortcuts</span>
+            <span class="platform">Privacy-First</span>
         </div>
     </section>
 
     <!-- USE CASES -->
-    <section class="use-cases">
+    <section>
+        <div class="section-label">Use Cases</div>
         <h2 class="section-title">Built for people who build things</h2>
         <p class="section-subtitle">Bzap fits into your workflow, whatever that looks like.</p>
 
         <div class="use-case-grid">
             <div class="use-case">
-                <span class="emoji">🏠</span>
-                <h3>Home Automation</h3>
-                <p>Motion alerts, leak detection, temperature drops. Tap a button on the notification to turn on lights or lock doors — without opening any app.</p>
+                <div class="uc-header">
+                    <span class="uc-icon">🏠</span>
+                    <h3>Home Automation</h3>
+                </div>
+                <p>Motion alerts, leak detection, temperature drops. Tap a button on the notification to turn on lights or lock doors.</p>
                 <div class="example">"Motion detected in garage"<br>→ [Turn On Lights] [Lock Door]</div>
             </div>
 
             <div class="use-case">
-                <span class="emoji">🚀</span>
-                <h3>CI/CD Pipelines</h3>
-                <p>Know the moment your build passes, deploy finishes, or tests fail. Approve production deploys right from the notification.</p>
+                <div class="uc-header">
+                    <span class="uc-icon">🚀</span>
+                    <h3>CI/CD Pipelines</h3>
+                </div>
+                <p>Know the moment your build passes, deploy finishes, or tests fail. Approve deploys from the notification.</p>
                 <div class="example">"Deploy v2.3.1 ready"<br>→ [Deploy to Prod] [Rollback]</div>
             </div>
 
             <div class="use-case">
-                <span class="emoji">🤖</span>
-                <h3>AI Coding Sessions</h3>
-                <p>Using Claude Code or Copilot? Get notified when tasks finish. Review changes and approve from your phone while AFK.</p>
+                <div class="uc-header">
+                    <span class="uc-icon">🤖</span>
+                    <h3>AI Coding Sessions</h3>
+                </div>
+                <p>Using Claude Code or Copilot? Get notified when tasks finish. Review and approve from your phone.</p>
                 <div class="example">"feat: add auth — 12 tests pass"<br>→ [Approve] [Reject]</div>
             </div>
 
             <div class="use-case">
-                <span class="emoji">📡</span>
-                <h3>Server Monitoring</h3>
-                <p>Uptime checks, error spikes, disk space warnings. Restart services or scale up with one tap.</p>
+                <div class="uc-header">
+                    <span class="uc-icon">📡</span>
+                    <h3>Server Monitoring</h3>
+                </div>
+                <p>Uptime checks, error spikes, disk warnings. Restart services or scale up with one tap.</p>
                 <div class="example">"API down — 502 for 2 min"<br>→ [Restart] [Scale Up]</div>
             </div>
 
             <div class="use-case">
-                <span class="emoji">📜</span>
-                <h3>Cron Jobs & Scripts</h3>
-                <p>Long-running backups, data exports, ML training. Get pinged when they're done — or when they crash.</p>
+                <div class="uc-header">
+                    <span class="uc-icon">📜</span>
+                    <h3>Cron Jobs & Scripts</h3>
+                </div>
+                <p>Long-running backups, data exports, ML training. Get pinged when done — or when they crash.</p>
                 <div class="example">"Backup complete: 12.4 GB"<br>→ [View Log] [Dismiss]</div>
             </div>
 
             <div class="use-case">
-                <span class="emoji">🔔</span>
-                <h3>Anything with HTTP</h3>
-                <p>If it can make an HTTP request, it can send you a Bzap. Python, Node, Go, Bash, Zapier, IFTTT, n8n — they all work.</p>
+                <div class="uc-header">
+                    <span class="uc-icon">🔔</span>
+                    <h3>Anything with HTTP</h3>
+                </div>
+                <p>If it can make an HTTP request, it can send you a Bzap. Python, Node, Go, Bash, Zapier, n8n.</p>
                 <div class="example">requests.post(url, json=<br>&nbsp;&nbsp;{"message": "Hello!"})</div>
             </div>
         </div>
@@ -176,54 +228,53 @@
 
     <!-- TWO-WAY ACTIONS -->
     <section>
+        <div class="section-label">Two-Way Actions</div>
         <h2 class="section-title">Notifications that do things</h2>
         <p class="section-subtitle">Action buttons that fire webhooks back. Your phone becomes a remote control.</p>
 
-        <div class="actions-demo">
-            <div class="phone-mockup">
-                <div class="phone-notif">
-                    <div>
-                        <span class="app-icon">b</span>
-                        <span class="app-name">BZAP</span>
-                    </div>
-                    <div class="notif-title">🚨 Motion Detected</div>
-                    <div class="notif-body">Front porch camera — 11:42 PM</div>
+        <div class="actions-grid">
+            <div class="notif-card">
+                <div class="notif-header">
+                    <div class="notif-icon">⚡</div>
+                    <span class="notif-app">Bzap</span>
+                    <span class="notif-time">now</span>
                 </div>
-                <div class="phone-actions">
-                    <div class="phone-btn green">💡 Lights On</div>
-                    <div class="phone-btn gray">🔒 Lock</div>
-                    <div class="phone-btn red">🔊 Alarm</div>
+                <div class="notif-title">🚨 Motion Detected</div>
+                <div class="notif-body">Front porch camera — 11:42 PM</div>
+                <div class="notif-actions">
+                    <div class="notif-btn primary">💡 Lights</div>
+                    <div class="notif-btn secondary">🔒 Lock</div>
+                    <div class="notif-btn danger">🔊 Alarm</div>
                 </div>
             </div>
 
             <div class="actions-text">
                 <h3>Close the loop</h3>
-                <p>Other push apps are one-way: they tell you something happened. Bzap lets you <strong>respond</strong>.</p>
+                <p>Other push apps are one-way. Bzap lets you <strong>respond</strong>.</p>
                 <ul>
-                    <li>Include <code>actions</code> in your webhook payload</li>
-                    <li>Each action has a label and a response webhook URL</li>
-                    <li>User taps the button, Bzap fires the webhook</li>
-                    <li>No app to open. No dashboard to load. Just tap.</li>
+                    <li>include actions in your payload</li>
+                    <li>each action has a response webhook</li>
+                    <li>user taps → bzap fires the webhook</li>
+                    <li>no app to open, just tap</li>
                 </ul>
             </div>
         </div>
 
-        <div class="code-card" style="max-width: 520px; margin: 32px auto 0;">
-            <div class="label">Payload with actions</div>
+        <div class="terminal" style="max-width: 540px; margin: 32px auto 0;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">payload.json</span>
+            </div>
             <pre>{
-  "title": "Motion Detected",
-  "message": "Front porch camera",
-  "actions": [
+  <span class="str">"title"</span>: <span class="str">"Motion Detected"</span>,
+  <span class="str">"message"</span>: <span class="str">"Front porch camera"</span>,
+  <span class="str">"actions"</span>: [
     {
-      "id": "lights",
-      "label": "Turn On Lights",
-      "webhook": "<span class="url">http://ha.local/api/lights</span>"
-    },
-    {
-      "id": "lock",
-      "label": "Lock Door",
-      "webhook": "<span class="url">http://ha.local/api/lock</span>",
-      "destructive": true
+      <span class="str">"id"</span>: <span class="str">"lights"</span>,
+      <span class="str">"label"</span>: <span class="str">"Turn On Lights"</span>,
+      <span class="str">"webhook"</span>: <span class="url">"http://ha.local/api/lights"</span>
     }
   ]
 }</pre>
@@ -232,66 +283,36 @@
 
     <!-- FEATURES -->
     <section>
+        <div class="section-label">Features</div>
         <h2 class="section-title">Everything you need, nothing you don't</h2>
         <p class="section-subtitle">Bzap is opinionated about simplicity.</p>
 
         <div class="feature-grid">
-            <div class="feature">
-                <span class="icon">📲</span>
-                <h3>QR Code Sharing</h3>
-                <p>Share your webhook as a scannable QR code</p>
-            </div>
-            <div class="feature">
-                <span class="icon">🗣</span>
-                <h3>Siri Shortcuts</h3>
-                <p>3 intents for the Shortcuts app</p>
-            </div>
-            <div class="feature">
-                <span class="icon">📋</span>
-                <h3>10+ Templates</h3>
-                <p>GitHub, Docker, Python, Node.js...</p>
-            </div>
-            <div class="feature">
-                <span class="icon">🔍</span>
-                <h3>Search & Export</h3>
-                <p>Full-text search. JSON/CSV export.</p>
-            </div>
-            <div class="feature">
-                <span class="icon">🔐</span>
-                <h3>Privacy-First</h3>
-                <p>Messages never stored on server</p>
-            </div>
-            <div class="feature">
-                <span class="icon">🖥</span>
-                <h3>All Platforms</h3>
-                <p>Native iPhone, iPad, Mac app</p>
-            </div>
-            <div class="feature">
-                <span class="icon">⚡</span>
-                <h3>Quick Actions</h3>
-                <p>Long-press app icon shortcuts</p>
-            </div>
-            <div class="feature">
-                <span class="icon">🎯</span>
-                <h3>Per-Device Webhooks</h3>
-                <p>Target specific devices</p>
-            </div>
+            <div class="feature"><span class="f-icon">⚡</span><h3>Two-Way</h3><p>Action buttons fire webhooks back</p></div>
+            <div class="feature"><span class="f-icon">📲</span><h3>QR Code</h3><p>Share webhook as scannable QR</p></div>
+            <div class="feature"><span class="f-icon">🗣</span><h3>Siri</h3><p>3 Shortcuts intents</p></div>
+            <div class="feature"><span class="f-icon">📋</span><h3>Templates</h3><p>GitHub, Docker, Python...</p></div>
+            <div class="feature"><span class="f-icon">🔍</span><h3>Search</h3><p>Full-text + JSON/CSV export</p></div>
+            <div class="feature"><span class="f-icon">🔐</span><h3>Private</h3><p>Messages never stored on server</p></div>
+            <div class="feature"><span class="f-icon">🖥</span><h3>Multi-Platform</h3><p>iPhone, iPad, Mac native</p></div>
+            <div class="feature"><span class="f-icon">🎯</span><h3>Per-Device</h3><p>Target specific devices</p></div>
         </div>
     </section>
 
     <!-- API -->
     <section class="api" id="docs">
+        <div class="section-label">API Reference</div>
         <h2 class="section-title">API Reference</h2>
         <p class="section-subtitle">Simple REST API. JSON in, push notification out.</p>
 
-        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/{secret}</span><span class="desc">Send notification (secret in URL)</span></div>
-        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/send</span><span class="desc">Send notification (Bearer auth)</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/{secret}</span><span class="desc">Send notification</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/send</span><span class="desc">Send (Bearer auth)</span></div>
         <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/devices/register</span><span class="desc">Register device</span></div>
         <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/devices</span><span class="desc">List devices</span></div>
-        <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/devices/{id}</span><span class="desc">Unregister device</span></div>
+        <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/devices/{id}</span><span class="desc">Unregister</span></div>
         <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/secret/rotate</span><span class="desc">Rotate secret</span></div>
 
-        <h3 style="margin-top: 40px; font-size: 1.2rem;">Payload Fields</h3>
+        <h3 style="margin-top: 40px; font-family: var(--mono); font-size: 1rem;">Payload Fields</h3>
         <div class="table-wrap">
         <table>
             <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
@@ -303,7 +324,7 @@
                 <tr><td><code>sound</code></td><td>string</td><td>Notification sound</td></tr>
                 <tr><td><code>open_url</code></td><td>string</td><td>URL to open when tapped</td></tr>
                 <tr><td><code>image_url</code></td><td>string</td><td>Image attachment</td></tr>
-                <tr><td><code>interruption_level</code></td><td>string</td><td><code>passive</code> / <code>active</code> / <code>time-sensitive</code></td></tr>
+                <tr><td><code>interruption_level</code></td><td>string</td><td>passive / active / time-sensitive</td></tr>
                 <tr><td><code>actions</code></td><td>array</td><td>Action buttons with response webhooks (max 4)</td></tr>
             </tbody>
         </table>
@@ -312,16 +333,16 @@
 
     <!-- CTA -->
     <section class="cta">
-        <h2>Ready to make it go bzap?</h2>
-        <p>Free to try. Available on the App Store.</p>
-        <a href="#" class="cta-btn">Download on the App Store</a>
+        <h2>ready to go bzap? ⚡</h2>
+        <p>Free to try. One webhook. Infinite possibilities.</p>
+        <a href="#" class="cta-btn">⚡ Get Bzap</a>
     </section>
 
 </div>
 
 <footer>
     <div class="container">
-        Bzap by <a href="https://github.com/isylva">iSylva</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="#docs">API Docs</a> &middot; <a href="mailto:support@isylva.com">Support</a>
+        <span style="font-family: var(--mono);">bzap</span> by <a href="https://github.com/isylva">iSylva</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="#docs">API</a> &middot; <a href="mailto:support@isylva.com">Support</a>
     </div>
 </footer>
 
