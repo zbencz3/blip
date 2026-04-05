@@ -28,6 +28,7 @@ struct WebhooksView: View {
                                 .foregroundStyle(BlipColors.textSecondary)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
                     .background(BlipColors.cardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
