@@ -17,7 +17,8 @@ enum Constants {
         static let retentionPeriod = "notification_retention_period"
         static let lastPushReceived = "last_push_received"
         static let lastWebhookUsed = "last_webhook_used"
+        static let firstLaunchDate = "first_launch_date"
     }
 
-    static let trialEndDate = "Apr 8, 2026"
+    static let trialDurationDays = 14
 }

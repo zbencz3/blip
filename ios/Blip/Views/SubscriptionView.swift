@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SubscriptionView: View {
+    var trialManager: TrialManager?
     @State private var selectedPlan: Plan = .monthly
     @State private var showComingSoon = false
 
@@ -24,7 +25,7 @@ struct SubscriptionView: View {
                     HStack(spacing: 0) {
                         Text("Your free access ends ")
                             .foregroundStyle(BlipColors.textPrimary)
-                        Text(Constants.trialEndDate)
+                        Text(trialManager?.trialEndDateFormatted ?? "soon")
                             .foregroundStyle(BlipColors.accentGreen)
                         Text(".")
                             .foregroundStyle(BlipColors.textPrimary)

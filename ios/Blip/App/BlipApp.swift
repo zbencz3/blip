@@ -19,6 +19,7 @@ struct BlipApp: App {
     @State private var secretManager = SecretManager()
     @State private var pushManager = PushNotificationManager()
     @State private var notificationHandler = NotificationHandler()
+    @State private var trialManager = TrialManager()
 
     private let sharedModelContainer: ModelContainer = {
         do {
@@ -38,7 +39,7 @@ struct BlipApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeView(viewModel: HomeViewModel(secretManager: secretManager))
+            HomeView(viewModel: HomeViewModel(secretManager: secretManager), trialManager: trialManager)
                 .preferredColorScheme(.dark)
                 .task { @MainActor in
                     NotificationCategories.register()

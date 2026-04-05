@@ -66,15 +66,15 @@ struct RecentNotificationsView: View {
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    HStack(spacing: 4) {
-                        exportMenuButton
-                        Button {
-                            viewModel.showDeleteConfirmation = true
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundStyle(BlipColors.textPrimary)
-                        }
+                    Button {
+                        viewModel.showDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundStyle(BlipColors.textPrimary)
                     }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    exportMenuButton
                 }
             }
             .alert("Delete All Notifications", isPresented: $viewModel.showDeleteConfirmation) {

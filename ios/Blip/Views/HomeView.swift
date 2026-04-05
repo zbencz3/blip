@@ -2,9 +2,12 @@ import SwiftUI
 
 struct HomeView: View {
     @State var viewModel: HomeViewModel
+    let trialManager: TrialManager
     @State private var showSettings = false
     @State private var showNotifications = false
     @State private var showCopied = false
+    @State private var showQRCode = false
+    @State private var showTemplates = false
 
     var body: some View {
         ZStack {
@@ -141,26 +144,40 @@ struct HomeView: View {
                         }
                     }
 
-                    // Features row
+                    // Features row — tappable
                     HStack(spacing: 12) {
-                        featurePill(icon: "bolt.fill", text: "Actions")
-                        featurePill(icon: "qrcode", text: "QR Code")
-                        featurePill(icon: "mic.fill", text: "Siri")
-                        featurePill(icon: "doc.text", text: "Templates")
+                        Button { showSettings = true } label: {
+                            featurePill(icon: "bolt.fill", text: "Actions")
+                        }
+                        Button { showQRCode = true } label: {
+                            featurePill(icon: "qrcode", text: "QR Code")
+                        }
+                        Button { showTemplates = true } label: {
+                            featurePill(icon: "doc.text", text: "Templates")
+                        }
                     }
 
                     Spacer().frame(height: 10)
 
-                    TrialBannerView()
+                    TrialBannerView(trialManager: trialManager)
                 }
                 .padding(.horizontal, 20)
             }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView(secretManager: viewModel.secretManager, apiClient: viewModel.apiClient)
+            SettingsView(secretManager: viewModel.secretManager, apiClient: viewModel.apiClient, trialManager: trialManager)
         }
         .sheet(isPresented: $showNotifications) {
             RecentNotificationsView()
+        }
+        .sheet(isPresented: $showQRCode) {
+            WebhookQRSheet(webhookURL: viewModel.webhookURL)
+        }
+        .sheet(isPresented: $showTemplates) {
+            NavigationStack {
+                TemplatesView(secretManager: viewModel.secretManager)
+            }
+            .preferredColorScheme(.dark)
         }
     }
 

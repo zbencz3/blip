@@ -10,6 +10,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     let secretManager: SecretManager
     let apiClient: APIClient
+    let trialManager: TrialManager
 
     @State private var showWebhooks = false
     @State private var showSubscription = false
@@ -30,7 +31,7 @@ struct SettingsView: View {
                                     icon: "heart.fill",
                                     iconColor: BlipColors.accentPurple,
                                     title: "Subscription",
-                                    subtitle: "Your free access ends \(Constants.trialEndDate).",
+                                    subtitle: trialManager.isTrialActive ? "Your free access ends \(trialManager.trialEndDateFormatted)." : "Your free trial has ended.",
                                     showChevron: true
                                 )
                             }
