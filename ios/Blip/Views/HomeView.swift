@@ -18,15 +18,6 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     // Navigation bar
                     HStack {
-                        Button { showNotifications = true } label: {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 20))
-                                .foregroundStyle(BlipColors.textPrimary)
-                                .frame(width: 40, height: 40)
-                                .background(BlipColors.cardBackground)
-                                .clipShape(Circle())
-                                .overlay(Circle().stroke(BlipColors.cardBorder, lineWidth: 0.5))
-                        }
                         Spacer()
                         Button { showSettings = true } label: {
                             Image(systemName: "gearshape.fill")
