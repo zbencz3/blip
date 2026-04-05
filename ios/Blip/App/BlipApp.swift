@@ -52,8 +52,20 @@ struct BlipApp: App {
                     _ = await pushManager.requestPermission()
                     appDelegate.pushManager = pushManager
 
-                    notificationHandler.onNotificationReceived = { _ in
+                    notificationHandler.onNotificationReceived = { [sharedModelContainer] notification in
                         UserDefaults.standard.set(Date(), forKey: Constants.UserDefaultsKeys.lastPushReceived)
+                        // Save to notification history
+                        let content = notification.request.content
+                        let context = ModelContext(sharedModelContainer)
+                        let record = NotificationRecord(
+                            title: content.title.isEmpty ? nil : content.title,
+                            subtitle: content.subtitle.isEmpty ? nil : content.subtitle,
+                            message: content.body.isEmpty ? nil : content.body,
+                            threadId: content.threadIdentifier.isEmpty ? nil : content.threadIdentifier,
+                            openURL: content.userInfo["open_url"] as? String
+                        )
+                        context.insert(record)
+                        try? context.save()
                     }
                     UNUserNotificationCenter.current().delegate = notificationHandler
                     appDelegate.notificationHandler = notificationHandler

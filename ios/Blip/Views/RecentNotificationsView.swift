@@ -84,7 +84,9 @@ struct RecentNotificationsView: View {
                 Text("This will permanently delete all notification history.")
             }
             .sheet(item: $exportItem) { item in
-                ShareSheet(items: [item.url])
+                #if canImport(UIKit)
+                UIShareSheetView(url: item.url)
+                #endif
             }
         }
         .searchable(text: $searchText, prompt: "Search notifications")
@@ -138,27 +140,14 @@ private struct ExportShareItem: Identifiable {
     let url: URL
 }
 
-private struct ShareSheet: View {
-    let items: [Any]
-
-    var body: some View {
-        #if canImport(UIKit)
-        UIShareSheetRepresentable(items: items)
-        #else
-        Text("Export saved to temporary directory.")
-            .padding()
-        #endif
-    }
-}
-
 #if canImport(UIKit)
 import UIKit
 
-private struct UIShareSheetRepresentable: UIViewControllerRepresentable {
-    let items: [Any]
+private struct UIShareSheetView: UIViewControllerRepresentable {
+    let url: URL
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
