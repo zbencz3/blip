@@ -20,6 +20,7 @@ struct BlipApp: App {
     @State private var pushManager = PushNotificationManager()
     @State private var notificationHandler = NotificationHandler()
     @State private var trialManager = TrialManager()
+    @State private var showSplash = true
 
     private let sharedModelContainer: ModelContainer = {
         do {
@@ -39,7 +40,12 @@ struct BlipApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeView(viewModel: HomeViewModel(secretManager: secretManager), trialManager: trialManager)
+            ZStack {
+                HomeView(viewModel: HomeViewModel(secretManager: secretManager), trialManager: trialManager)
+                if showSplash {
+                    SplashView(isActive: $showSplash)
+                }
+            }
                 .preferredColorScheme(.dark)
                 .task { @MainActor in
                     NotificationCategories.register()

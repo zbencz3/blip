@@ -52,7 +52,7 @@ struct SubscriptionView: View {
                         ProgressView()
                             .tint(BlipColors.textSecondary)
                             .padding(40)
-                    } else {
+                    } else if !subscriptionManager.products.isEmpty {
                         VStack(spacing: 12) {
                             if let monthly = subscriptionManager.monthlyProduct {
                                 productCard(
@@ -67,6 +67,26 @@ struct SubscriptionView: View {
                                 )
                             }
                         }
+                    } else {
+                        // Fallback when StoreKit products aren't available yet
+                        VStack(spacing: 12) {
+                            fallbackPlanCard(
+                                title: "Monthly",
+                                price: "$0.99/month",
+                                description: "Keep the pushes coming after your free trial ends.",
+                                isSelected: selectedProductID == SubscriptionManager.ProductIDs.monthly
+                            ) {
+                                selectedProductID = SubscriptionManager.ProductIDs.monthly
+                            }
+                            fallbackPlanCard(
+                                title: "Yearly",
+                                price: "$9.99/year",
+                                description: "Keep your device bzap'ing at a better price.",
+                                isSelected: selectedProductID == SubscriptionManager.ProductIDs.yearly
+                            ) {
+                                selectedProductID = SubscriptionManager.ProductIDs.yearly
+                            }
+                        }
                     }
 
                     // Error
@@ -79,6 +99,9 @@ struct SubscriptionView: View {
                     // Auto-renew note
                     if let selected = subscriptionManager.products.first(where: { $0.id == selectedProductID }) {
                         Text("Plan auto-renews for \(selected.displayPrice)/\(selected.subscription?.subscriptionPeriod.unit == .year ? "year" : "month") until cancelled.")
+                            .font(BlipFonts.caption)
+                    } else {
+                        Text("Plan auto-renews until cancelled.")
                             .font(BlipFonts.caption)
                             .foregroundStyle(BlipColors.textSecondary)
                     }
@@ -176,6 +199,37 @@ struct SubscriptionView: View {
                         .font(.system(size: 24))
                 }
                 Text(product.description)
+                    .font(BlipFonts.caption)
+                    .foregroundStyle(BlipColors.textSecondary)
+            }
+            .padding()
+            .background(BlipColors.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? BlipColors.accentGreen : BlipColors.cardBorder, lineWidth: isSelected ? 2 : 0.5)
+            )
+        }
+    }
+
+    private func fallbackPlanCard(title: String, price: String, description: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(BlipColors.textPrimary)
+                        Text(price)
+                            .font(BlipFonts.caption)
+                            .foregroundStyle(BlipColors.textSecondary)
+                    }
+                    Spacer()
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(isSelected ? BlipColors.accentGreen : BlipColors.textSecondary)
+                        .font(.system(size: 24))
+                }
+                Text(description)
                     .font(BlipFonts.caption)
                     .foregroundStyle(BlipColors.textSecondary)
             }

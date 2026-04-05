@@ -9,3 +9,4 @@
 ## Tools & References
 - [reference_claude_autonomy.md](reference_claude_autonomy.md) — six levels of Claude Code autonomy: subagents, loops, VPS
 - [reference_no_flicker.md](reference_no_flicker.md) — NO_FLICKER mode for Claude Code CLI
+- [reference_llm_wiki.md](reference_llm_wiki.md) — Karpathy's LLM Wiki: incremental markdown knowledge base instead of RAG
