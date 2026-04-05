@@ -30,6 +30,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Bzap
         PRODUCT_NAME: Bzap
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
     plist:
       NSAppTransportSecurity:
         NSAllowsLocalNetworking: true
