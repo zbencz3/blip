@@ -43,7 +43,7 @@ struct WebhookQRSheet: View {
                 Spacer()
             }
             .padding(.horizontal, 20)
-            .padding(.top, 16)
+            .padding(.top, 40)
         }
         .presentationDetents([.medium, .large])
         .preferredColorScheme(.dark)
