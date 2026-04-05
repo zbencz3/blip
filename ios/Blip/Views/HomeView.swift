@@ -87,11 +87,12 @@ struct HomeView: View {
                             }
                         }
 
-                        Text(viewModel.curlCommand)
-                            .font(.system(size: 13, design: .monospaced))
-                            .foregroundStyle(BlipColors.textCode)
-                            .lineLimit(4)
-                            .textSelection(.enabled)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            Text(viewModel.curlCommand)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(BlipColors.textCode)
+                                .textSelection(.enabled)
+                        }
                     }
                     .padding(16)
                     .background(BlipColors.cardBackground)
