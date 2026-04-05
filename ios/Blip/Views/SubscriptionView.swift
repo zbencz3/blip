@@ -1,13 +1,11 @@
 import SwiftUI
+import StoreKit
 
 struct SubscriptionView: View {
     var trialManager: TrialManager?
-    @State private var selectedPlan: Plan = .monthly
-    @State private var showComingSoon = false
-
-    enum Plan {
-        case monthly, yearly
-    }
+    @State private var subscriptionManager = SubscriptionManager()
+    @State private var selectedProductID: String = SubscriptionManager.ProductIDs.monthly
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
@@ -15,6 +13,7 @@ struct SubscriptionView: View {
 
             ScrollView {
                 VStack(spacing: 24) {
+                    // Header
                     VStack(spacing: 8) {
                         Text("Subscribe to\nkeep ") + Text("bzap").foregroundColor(BlipColors.accentPurple).bold() + Text("'ing")
                     }
@@ -22,65 +21,109 @@ struct SubscriptionView: View {
                     .foregroundStyle(BlipColors.textPrimary)
                     .multilineTextAlignment(.center)
 
-                    HStack(spacing: 0) {
-                        Text("Your free access ends ")
-                            .foregroundStyle(BlipColors.textPrimary)
-                        Text(trialManager?.trialEndDateFormatted ?? "soon")
-                            .foregroundStyle(BlipColors.accentGreen)
-                        Text(".")
-                            .foregroundStyle(BlipColors.textPrimary)
-                    }
-                    .font(BlipFonts.body)
-
-                    Text("Pick a plan before then to keep the pushes coming.")
+                    // Trial status
+                    if subscriptionManager.isSubscribed {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(BlipColors.accentGreen)
+                            Text("You're subscribed!")
+                                .foregroundStyle(BlipColors.accentGreen)
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                    } else if let trialManager {
+                        HStack(spacing: 0) {
+                            Text("Your free access ends ")
+                                .foregroundStyle(BlipColors.textPrimary)
+                            Text(trialManager.trialEndDateFormatted)
+                                .foregroundStyle(BlipColors.accentGreen)
+                            Text(".")
+                                .foregroundStyle(BlipColors.textPrimary)
+                        }
                         .font(BlipFonts.body)
-                        .foregroundStyle(BlipColors.textSecondary)
-                        .multilineTextAlignment(.center)
 
-                    // Plan cards
-                    VStack(spacing: 12) {
-                        planCard(
-                            title: "Monthly",
-                            price: "4.99/month",
-                            description: "Keep the pushes coming after your free access ends.",
-                            isSelected: selectedPlan == .monthly
-                        ) {
-                            selectedPlan = .monthly
-                        }
+                        Text("Pick a plan before then to keep the pushes coming.")
+                            .font(BlipFonts.body)
+                            .foregroundStyle(BlipColors.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
 
-                        planCard(
-                            title: "Yearly",
-                            price: "49.99/year",
-                            description: "Keeps your device bzap'ing at a better price.",
-                            isSelected: selectedPlan == .yearly
-                        ) {
-                            selectedPlan = .yearly
+                    // Product cards
+                    if subscriptionManager.isLoading && subscriptionManager.products.isEmpty {
+                        ProgressView()
+                            .tint(BlipColors.textSecondary)
+                            .padding(40)
+                    } else {
+                        VStack(spacing: 12) {
+                            if let monthly = subscriptionManager.monthlyProduct {
+                                productCard(
+                                    product: monthly,
+                                    isSelected: selectedProductID == monthly.id
+                                )
+                            }
+                            if let yearly = subscriptionManager.yearlyProduct {
+                                productCard(
+                                    product: yearly,
+                                    isSelected: selectedProductID == yearly.id
+                                )
+                            }
                         }
                     }
 
-                    Text("Plan auto-renews for 4.99/month until cancelled.")
-                        .font(BlipFonts.caption)
-                        .foregroundStyle(BlipColors.textSecondary)
+                    // Error
+                    if let error = subscriptionManager.errorMessage {
+                        Text(error)
+                            .font(BlipFonts.caption)
+                            .foregroundStyle(.red)
+                    }
 
-                    Button { showComingSoon = true } label: {
-                        Text("Subscribe")
+                    // Auto-renew note
+                    if let selected = subscriptionManager.products.first(where: { $0.id == selectedProductID }) {
+                        Text("Plan auto-renews for \(selected.displayPrice)/\(selected.subscription?.subscriptionPeriod.unit == .year ? "year" : "month") until cancelled.")
+                            .font(BlipFonts.caption)
+                            .foregroundStyle(BlipColors.textSecondary)
+                    }
+
+                    // Subscribe button
+                    if !subscriptionManager.isSubscribed {
+                        Button {
+                            Task { await subscribe() }
+                        } label: {
+                            Group {
+                                if subscriptionManager.isLoading {
+                                    ProgressView()
+                                        .tint(.black)
+                                } else {
+                                    Text("Subscribe")
+                                }
+                            }
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(BlipColors.accentGreen)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(subscriptionManager.isLoading)
+
+                        Button {
+                            Task { await subscriptionManager.restore() }
+                        } label: {
+                            Text("Restore Subscription")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.black)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
                     }
 
-                    Button { showComingSoon = true } label: {
-                        Text("Restore Subscription")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    // Links
+                    HStack(spacing: 16) {
+                        Link("Terms of Service", destination: URL(string: "https://zbencz3.github.io/blip/")!)
+                        Link("Privacy Policy", destination: URL(string: "https://zbencz3.github.io/blip/privacy.html")!)
                     }
+                    .font(BlipFonts.caption)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
@@ -92,36 +135,38 @@ struct SubscriptionView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("Manage") { showComingSoon = true }
-                    Button("Redeem Code") { showComingSoon = true }
+                    Button("Manage Subscription") {
+                        Task {
+                            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                                try? await AppStore.showManageSubscriptions(in: windowScene)
+                            }
+                        }
+                    }
+                    Button("Redeem Code") {
+                        SKPaymentQueue.default().presentCodeRedemptionSheet()
+                    }
                 } label: {
                     Image(systemName: "ellipsis")
                         .foregroundStyle(BlipColors.textPrimary)
                 }
             }
         }
-        .alert("Coming Soon", isPresented: $showComingSoon) {
-            Button("OK") {}
-        } message: {
-            Text("Subscriptions will be available in a future update.")
-        }
     }
 
-    private func planCard(
-        title: String,
-        price: String,
-        description: String,
-        isSelected: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
+    private func subscribe() async {
+        guard let product = subscriptionManager.products.first(where: { $0.id == selectedProductID }) else { return }
+        _ = await subscriptionManager.purchase(product)
+    }
+
+    private func productCard(product: Product, isSelected: Bool) -> some View {
+        Button { selectedProductID = product.id } label: {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(title)
+                        Text(product.displayName)
                             .font(.system(size: 20, weight: .bold))
                             .foregroundStyle(BlipColors.textPrimary)
-                        Text(price)
+                        Text(product.displayPrice + "/" + (product.subscription?.subscriptionPeriod.unit == .year ? "year" : "month"))
                             .font(BlipFonts.caption)
                             .foregroundStyle(BlipColors.textSecondary)
                     }
@@ -130,7 +175,7 @@ struct SubscriptionView: View {
                         .foregroundStyle(isSelected ? BlipColors.accentGreen : BlipColors.textSecondary)
                         .font(.system(size: 24))
                 }
-                Text(description)
+                Text(product.description)
                     .font(BlipFonts.caption)
                     .foregroundStyle(BlipColors.textSecondary)
             }
