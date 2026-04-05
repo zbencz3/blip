@@ -130,6 +130,16 @@ struct SettingsView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
+
+                    // Version
+                    let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+                    let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+                    Text("Bzap \(v) (\(b))")
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(BlipColors.textSecondary.opacity(0.5))
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 12)
+                        .padding(.bottom, 24)
                 }
             }
             .navigationTitle("Settings")
