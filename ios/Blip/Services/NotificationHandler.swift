@@ -12,25 +12,26 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        // Register dynamic category if the notification includes actions
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
         registerDynamicCategoryIfNeeded(from: notification.request.content)
         onNotificationReceived?(notification)
-        return [.banner, .sound, .badge]
+        completionHandler([.banner, .sound, .badge])
     }
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
         let userInfo = response.notification.request.content.userInfo
         let actionIdentifier = response.actionIdentifier
 
         switch actionIdentifier {
         case "COPY_MESSAGE":
             let body = response.notification.request.content.body
-            await MainActor.run {
+            DispatchQueue.main.async {
                 #if canImport(UIKit)
                 UIPasteboard.general.string = body
                 #else
@@ -38,11 +39,12 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
                 NSPasteboard.general.setString(body, forType: .string)
                 #endif
             }
+            completionHandler()
 
         case "OPEN_URL":
             if let urlString = userInfo["open_url"] as? String,
                let url = URL(string: urlString) {
-                await MainActor.run {
+                DispatchQueue.main.async {
                     #if canImport(UIKit)
                     UIApplication.shared.open(url)
                     #else
@@ -50,35 +52,37 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
                     #endif
                 }
             }
+            completionHandler()
 
         case "MARK_READ":
-            // No-op — acknowledges the notification
-            break
+            completionHandler()
 
         default:
-            // Check if this is a dynamic action with a webhook
-            if let handled = await handleDynamicAction(
-                actionIdentifier: actionIdentifier,
-                userInfo: userInfo
-            ), handled {
-                break
-            }
-
-            // Default tap: open URL if present
-            if let urlString = userInfo["open_url"] as? String,
-               let url = URL(string: urlString) {
-                await MainActor.run {
+            // Check dynamic action webhooks
+            if let actionsData = userInfo["actions"] as? [[String: Any]],
+               let actionDict = actionsData.first(where: { ($0["id"] as? String) == actionIdentifier }),
+               let webhookURL = actionDict["webhook"] as? String {
+                Task { @Sendable in
+                    await ActionWebhookService.fire(url: webhookURL)
+                }
+                completionHandler()
+            } else if let urlString = userInfo["open_url"] as? String,
+                      let url = URL(string: urlString) {
+                DispatchQueue.main.async {
                     #if canImport(UIKit)
                     UIApplication.shared.open(url)
                     #else
                     NSWorkspace.shared.open(url)
                     #endif
                 }
+                completionHandler()
+            } else {
+                completionHandler()
             }
         }
     }
 
-    // MARK: - Dynamic Actions
+    // MARK: - Dynamic Categories
 
     private func registerDynamicCategoryIfNeeded(from content: UNNotificationContent) {
         guard let actionsData = content.userInfo["actions"] as? [[String: Any]] else { return }
@@ -97,24 +101,8 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
         guard !actions.isEmpty else { return }
 
         let categoryId = content.categoryIdentifier
-        guard categoryId.hasPrefix("BLIP_DYN_") else { return }
+        guard categoryId.hasPrefix("BZAP_DYN_") else { return }
 
         NotificationCategories.registerDynamic(actions: actions, categoryId: categoryId)
-    }
-
-    private func handleDynamicAction(
-        actionIdentifier: String,
-        userInfo: [AnyHashable: Any]
-    ) async -> Bool? {
-        guard let actionsData = userInfo["actions"] as? [[String: Any]] else { return nil }
-
-        // Find the matching action
-        guard let actionDict = actionsData.first(where: { ($0["id"] as? String) == actionIdentifier }),
-              let webhookURL = actionDict["webhook"] as? String else {
-            return nil
-        }
-
-        await ActionWebhookService.fire(url: webhookURL)
-        return true
     }
 }

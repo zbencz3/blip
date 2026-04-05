@@ -10,7 +10,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     GENERATE_INFOPLIST_FILE: YES
-    CURRENT_PROJECT_VERSION: 6
+    CURRENT_PROJECT_VERSION: 9
     MARKETING_VERSION: "1.0.0"
 
 targets:
@@ -27,6 +27,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         SUPPORTS_MACCATALYST: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.isylva.boopsy
+        DEVELOPMENT_TEAM: 7TH7A8M6P4
+        CODE_SIGN_STYLE: Automatic
         INFOPLIST_KEY_CFBundleDisplayName: Bzap
         PRODUCT_NAME: Bzap
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"

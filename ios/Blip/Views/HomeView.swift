@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var showCopied = false
     @State private var showQRCode = false
     @State private var showTemplates = false
+    @State private var showSubscription = false
 
     var body: some View {
         ZStack {
@@ -147,7 +148,7 @@ struct HomeView: View {
                     // Features row — tappable
                     HStack(spacing: 12) {
                         Button { showSettings = true } label: {
-                            featurePill(icon: "bolt.fill", text: "Actions")
+                            featurePill(icon: "gearshape.fill", text: "Settings")
                         }
                         Button { showQRCode = true } label: {
                             featurePill(icon: "qrcode", text: "QR Code")
@@ -159,7 +160,10 @@ struct HomeView: View {
 
                     Spacer().frame(height: 10)
 
-                    TrialBannerView(trialManager: trialManager)
+                    // Trial banner — tap opens subscription
+                    Button { showSubscription = true } label: {
+                        TrialBannerView(trialManager: trialManager)
+                    }
                 }
                 .padding(.horizontal, 20)
             }
@@ -176,6 +180,12 @@ struct HomeView: View {
         .sheet(isPresented: $showTemplates) {
             NavigationStack {
                 TemplatesView(secretManager: viewModel.secretManager)
+            }
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showSubscription) {
+            NavigationStack {
+                SubscriptionView(trialManager: trialManager)
             }
             .preferredColorScheme(.dark)
         }
