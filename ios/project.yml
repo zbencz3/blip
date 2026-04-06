@@ -52,13 +52,15 @@ targets:
     platform: iOS
     sources:
       - path: BzapNotificationService
+        excludes:
+          - Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.isylva.boopsy.notificationservice
         DEVELOPMENT_TEAM: 7TH7A8M6P4
         CODE_SIGN_STYLE: Automatic
-        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.usernotifications.service
-        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: BzapNotificationService/Info.plist
     entitlements:
       path: BzapNotificationService/BzapNotificationService.entitlements
       properties:
