@@ -62,10 +62,12 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
             if let actionsData = userInfo["actions"] as? [[String: Any]],
                let actionDict = actionsData.first(where: { ($0["id"] as? String) == actionIdentifier }),
                let webhookURL = actionDict["webhook"] as? String {
+                nonisolated(unsafe) let handler = completionHandler
                 Task { @Sendable in
                     await ActionWebhookService.fire(url: webhookURL)
+                    handler()
                 }
-                completionHandler()
+                return
             } else if let urlString = userInfo["open_url"] as? String,
                       let url = URL(string: urlString) {
                 DispatchQueue.main.async {

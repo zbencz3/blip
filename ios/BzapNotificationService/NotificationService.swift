@@ -38,17 +38,47 @@ class NotificationService: UNNotificationServiceExtension {
                     intentIdentifiers: []
                 )
 
-                let center = UNUserNotificationCenter.current()
-                center.getNotificationCategories { existing in
-                    var categories = existing
-                    categories.insert(category)
-                    center.setNotificationCategories(categories)
+                // Include static categories to avoid overwriting them
+                let staticCategories: Set<UNNotificationCategory> = [
+                    UNNotificationCategory(
+                        identifier: "BZAP_GENERAL",
+                        actions: [
+                            UNNotificationAction(identifier: "COPY_MESSAGE", title: "Copy Message", options: []),
+                            UNNotificationAction(identifier: "MARK_READ", title: "Mark as Read", options: [])
+                        ],
+                        intentIdentifiers: []
+                    ),
+                    UNNotificationCategory(
+                        identifier: "BZAP_WITH_URL",
+                        actions: [
+                            UNNotificationAction(identifier: "OPEN_URL", title: "Open URL", options: .foreground),
+                            UNNotificationAction(identifier: "COPY_MESSAGE", title: "Copy Message", options: []),
+                            UNNotificationAction(identifier: "MARK_READ", title: "Mark as Read", options: [])
+                        ],
+                        intentIdentifiers: []
+                    )
+                ]
 
-                    // Small delay to ensure category is registered before delivery
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        contentHandler(content)
-                    }
+                // Merge: get existing dynamic categories, add new one, plus static
+                let center = UNUserNotificationCenter.current()
+                let semaphore = DispatchSemaphore(value: 0)
+                var existingCategories: Set<UNNotificationCategory> = []
+
+                center.getNotificationCategories { categories in
+                    existingCategories = categories
+                    semaphore.signal()
                 }
+                semaphore.wait()
+
+                // Keep existing dynamic categories, add new one, always include static
+                var merged = existingCategories.filter { $0.identifier.hasPrefix("BZAP_DYN_") }
+                merged.insert(category)
+                merged.formUnion(staticCategories)
+                center.setNotificationCategories(merged)
+
+                // Wait briefly for registration to take effect
+                Thread.sleep(forTimeInterval: 0.05)
+                contentHandler(content)
                 return
             }
         }

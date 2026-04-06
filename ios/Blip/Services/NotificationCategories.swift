@@ -49,24 +49,13 @@ enum NotificationCategories {
             actions: newActions,
             intentIdentifiers: []
         )
-        // Merge with known static categories to avoid overwriting them
-        let generalCat = UNNotificationCategory(
-            identifier: Self.generalCategory,
-            actions: [
-                UNNotificationAction(identifier: "COPY_MESSAGE", title: "Copy Message", options: []),
-                UNNotificationAction(identifier: "MARK_READ", title: "Mark as Read", options: [])
-            ],
-            intentIdentifiers: []
-        )
-        let urlCat = UNNotificationCategory(
-            identifier: Self.urlCategory,
-            actions: [
-                UNNotificationAction(identifier: "OPEN_URL", title: "Open URL", options: .foreground),
-                UNNotificationAction(identifier: "COPY_MESSAGE", title: "Copy Message", options: []),
-                UNNotificationAction(identifier: "MARK_READ", title: "Mark as Read", options: [])
-            ],
-            intentIdentifiers: []
-        )
-        center.setNotificationCategories([generalCat, urlCat, category])
+        // Merge with all existing categories (preserves other dynamic categories)
+        center.getNotificationCategories { existing in
+            var categories = existing
+            // Remove old version of this category if it exists, add updated one
+            categories = categories.filter { $0.identifier != categoryId }
+            categories.insert(category)
+            center.setNotificationCategories(categories)
+        }
     }
 }
