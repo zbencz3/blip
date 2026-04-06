@@ -9,7 +9,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     GENERATE_INFOPLIST_FILE: YES
-    CURRENT_PROJECT_VERSION: 24
+    CURRENT_PROJECT_VERSION: 25
     MARKETING_VERSION: "1.0.0"
 
 targets:
@@ -38,8 +38,29 @@ targets:
       NSAppTransportSecurity:
         NSAllowsLocalNetworking: true
       LSApplicationCategoryType: public.app-category.developer-tools
+    dependencies:
+      - target: BzapNotificationService
     entitlements:
       path: Blip/Blip.entitlements
+      properties:
+        aps-environment: development
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+
+  BzapNotificationService:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: BzapNotificationService
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.isylva.boopsy.notificationservice
+        DEVELOPMENT_TEAM: 7TH7A8M6P4
+        CODE_SIGN_STYLE: Automatic
+        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.usernotifications.service
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+    entitlements:
+      path: BzapNotificationService/BzapNotificationService.entitlements
       properties:
         aps-environment: development
         com.apple.security.app-sandbox: true

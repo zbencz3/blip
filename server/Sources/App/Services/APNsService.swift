@@ -35,6 +35,7 @@ struct LiveAPNsService: APNsServiceProtocol {
             blipActions = nil
         }
 
+        let hasMutableContent = blipActions != nil
         let alert = APNSAlertNotification(
             alert: .init(
                 title: payload.title.map { .raw($0) },
@@ -51,6 +52,7 @@ struct LiveAPNsService: APNsServiceProtocol {
                 actions: blipActions
             ),
             sound: sound,
+            mutableContent: hasMutableContent ? 1 : 0,
             threadID: payload.threadId,
             category: category,
             interruptionLevel: interruptionLevel

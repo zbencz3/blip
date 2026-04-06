@@ -40,7 +40,22 @@ Build a clone of **brrr** (https://brrr.now by Simon Støvring) — a simple pus
 
 **Sounds:** `default`, `system`, `brrr`, `bell_ringing`, `bubble_ding`, `bubbly_success_ding`, `cat_meow`, `calm1`, `calm2`, `cha_ching`, `dog_barking`, `door_bell`, `duck_quack`, `short_triple_blink`, `upbeat_bells`, `warm_soft_error`
 
+| `actions` | array | Action buttons with response webhooks (max 4) |
+
+**Action object:** `{"id": "deploy", "label": "Deploy to Prod", "webhook": "https://your-ci.com/deploy", "destructive": false}`
+
 **Response:** `200 OK` with `{"message": "Notification sent"}` or appropriate error
+
+### Two-Way Action Buttons
+
+Notifications can include up to 4 action buttons. When tapped, each fires a webhook back. This requires:
+
+1. **Server:** Set `mutable-content: 1` in APNs payload when `actions` are present (triggers Notification Service Extension)
+2. **Server:** Set category to `BZAP_DYN_{hash}` where hash is deterministic from sorted action IDs
+3. **iOS:** `BzapNotificationService` extension registers the dynamic category before the notification displays
+4. **iOS:** `NotificationHandler` fires the action's webhook URL when the user taps a button
+
+**Important:** Category prefixes must match between server and iOS app (`BZAP_DYN_`, `BZAP_GENERAL`, `BZAP_WITH_URL`). A mismatch causes buttons to not appear.
 
 ### iOS App Screens (from screenshots)
 
@@ -66,10 +81,19 @@ Build a clone of **brrr** (https://brrr.now by Simon Støvring) — a simple pus
 cd server && swift build
 cd server && swift test
 
+# Deploy server to Fly.io
+cd server && flyctl deploy --remote-only
+
 # iOS
 cd ios && xcodegen generate
 cd ios && xcodebuild -project Blip.xcodeproj -scheme Blip -sdk iphonesimulator -destination 'platform=iOS Simulator,id=40323EF0-7B4E-43FB-A939-15B4882384E8' build
 cd ios && xcodebuild -project Blip.xcodeproj -scheme BlipTests -sdk iphonesimulator -destination 'platform=iOS Simulator,id=40323EF0-7B4E-43FB-A939-15B4882384E8' test
+
+# Archive + upload to App Store
+cd ios && xcodegen generate
+xcodebuild -project Blip.xcodeproj -scheme Blip -sdk iphoneos -destination generic/platform=iOS -archivePath /tmp/Bzap.xcarchive archive
+xcodebuild -exportArchive -archivePath /tmp/Bzap.xcarchive -exportOptionsPlist /tmp/ExportOptions.plist -exportPath /tmp/BzapExport
+xcrun altool --upload-app -f /tmp/BzapExport/Bzap.ipa -t ios --apiKey 2WM4W2XZJ5 --apiIssuer 69a6de70-0922-47e3-e053-5b8c7c11a4d1
 
 # Run server locally
 cd server && swift run
@@ -109,10 +133,10 @@ Write or update tests in the same commit as the feature, especially for:
 
 ## i18n & Localization
 
-- Three locales: en, ro, hu
-- Hungarian uses family-name-first order — always use a `formatName()` helper
-- Never hardcode English strings in UI — use localization system
-- Romanian: formal/polite form (dvs.), not informal (tu)
+- English only for v1.0. Localization (en, ro, hu) deferred to post-launch.
+- When adding localization later:
+  - Hungarian uses family-name-first order — always use a `formatName()` helper
+  - Romanian: formal/polite form (dvs.), not informal (tu)
 
 ## Verification Before Commit
 
