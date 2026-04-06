@@ -143,7 +143,7 @@ struct SubscriptionView: View {
 
                     // Links
                     HStack(spacing: 16) {
-                        Link("Terms of Service", destination: URL(string: "https://zbencz3.github.io/blip/")!)
+                        Link("Terms of Service", destination: URL(string: "https://zbencz3.github.io/blip/terms.html")!)
                         Link("Privacy Policy", destination: URL(string: "https://zbencz3.github.io/blip/privacy.html")!)
                     }
                     .font(BlipFonts.caption)

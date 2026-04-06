@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bzap — Terms of Service</title>
+    <style>
+        :root { --bg: #000; --card: #1c1c1e; --border: #333; --purple: #ff3b5c; --text: #fff; --muted: #999; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif; background: var(--bg); color: var(--text); line-height: 1.8; padding: 60px 24px; }
+        .container { max-width: 640px; margin: 0 auto; }
+        h1 { font-size: 2rem; margin-bottom: 8px; }
+        h2 { font-size: 1.3rem; margin-top: 32px; margin-bottom: 8px; color: var(--purple); }
+        p { margin-bottom: 16px; color: var(--muted); }
+        a { color: var(--purple); text-decoration: none; }
+        .date { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Terms of Service</h1>
+    <p class="date">Effective: April 6, 2026</p>
+
+    <h2>Acceptance</h2>
+    <p>By using Bzap, you agree to these terms. If you do not agree, do not use the app.</p>
+
+    <h2>What Bzap Does</h2>
+    <p>Bzap is a push notification relay service. You receive a webhook URL. Anyone with that URL can send push notifications to your devices by making an HTTP request. Bzap forwards the request as an Apple Push Notification. Messages are not stored on our server.</p>
+
+    <h2>Your Responsibilities</h2>
+    <p><strong>Keep your webhook URL private.</strong> Anyone with your URL can send you notifications. If your URL is compromised, rotate your secret in the app to generate a new one.</p>
+    <p><strong>Do not abuse the service.</strong> Do not use Bzap to send spam, harassment, illegal content, or notifications that violate Apple's guidelines. Do not use the service to overload third-party systems via action button webhooks.</p>
+    <p><strong>Webhook content is your responsibility.</strong> Bzap relays notifications sent to your webhook. We do not monitor, filter, or moderate the content of notifications. You are responsible for how you share your webhook URL and what systems you connect to it.</p>
+
+    <h2>Two-Way Action Buttons</h2>
+    <p>Notifications may include action buttons that fire HTTP requests to URLs specified by the sender. When you tap an action button, your device sends a request directly to the specified URL. Bzap is not responsible for the behavior of external webhook endpoints.</p>
+
+    <h2>Subscriptions</h2>
+    <p>Bzap offers optional paid subscriptions via Apple's In-App Purchase system. Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current period. You can manage or cancel subscriptions in your device's Settings → Apple ID → Subscriptions. Refunds are handled by Apple per their refund policy.</p>
+
+    <h2>Service Availability</h2>
+    <p>We aim to keep Bzap available and reliable, but we do not guarantee uninterrupted service. Notifications depend on Apple Push Notification service (APNs), network connectivity, and your device settings. We are not liable for missed or delayed notifications.</p>
+
+    <h2>Limitation of Liability</h2>
+    <p>Bzap is provided "as is" without warranties of any kind. To the maximum extent permitted by law, iSylva is not liable for any damages arising from the use of Bzap, including but not limited to missed notifications, unintended webhook triggers, or actions taken based on notification content.</p>
+
+    <h2>Termination</h2>
+    <p>We may suspend or terminate access to Bzap if you violate these terms or abuse the service. You may stop using Bzap at any time by deleting the app.</p>
+
+    <h2>Changes</h2>
+    <p>We may update these terms. The updated version will be posted here with a new effective date. Continued use of Bzap after changes constitutes acceptance.</p>
+
+    <h2>Contact</h2>
+    <p>Questions? Email <a href="mailto:support@isylva.com">support@isylva.com</a>.</p>
+
+    <p style="margin-top: 40px;"><a href="/">← Back to Bzap</a></p>
+</div>
+</body>
+</html>
