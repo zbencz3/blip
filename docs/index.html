@@ -148,7 +148,7 @@
                 <span class="terminal-dot g"></span>
                 <span class="terminal-title">terminal</span>
             </div>
-            <pre><span class="prompt">$</span> <span class="cmd">curl -X POST</span> <span class="url">https://bzap-server.onrender.com/v1/your_secret</span> \
+            <pre><span class="prompt">$</span> <span class="cmd">curl -X POST</span> <span class="url">https://bzap-server.fly.dev/v1/your_secret</span> \
   <span class="cmd">-d</span> <span class="str">'{"title":"Deploy","message":"v2.1 is live! 🚀"}'</span>
 
 <span class="response">{"message":"Notification sent"}</span></pre>
@@ -157,7 +157,6 @@
         <div class="platforms">
             <span class="platform">iPhone</span>
             <span class="platform">iPad</span>
-            <span class="platform">Mac</span>
             <span class="platform">Siri Shortcuts</span>
             <span class="platform">Privacy-First</span>
         </div>
@@ -294,7 +293,7 @@
             <div class="feature"><span class="f-icon">📋</span><h3>Templates</h3><p>GitHub, Docker, Python...</p></div>
             <div class="feature"><span class="f-icon">🔍</span><h3>Search</h3><p>Full-text + JSON/CSV export</p></div>
             <div class="feature"><span class="f-icon">🔐</span><h3>Private</h3><p>Messages never stored on server</p></div>
-            <div class="feature"><span class="f-icon">🖥</span><h3>Multi-Platform</h3><p>iPhone, iPad, Mac native</p></div>
+            <div class="feature"><span class="f-icon">🖥</span><h3>Multi-Platform</h3><p>iPhone & iPad native</p></div>
             <div class="feature"><span class="f-icon">🎯</span><h3>Per-Device</h3><p>Target specific devices</p></div>
         </div>
     </section>
@@ -328,6 +327,37 @@
                 <tr><td><code>actions</code></td><td>array</td><td>Action buttons with response webhooks (max 4)</td></tr>
             </tbody>
         </table>
+        </div>
+
+        <h3 style="margin-top: 40px; font-family: var(--mono); font-size: 1rem;">Action Buttons Example</h3>
+        <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 16px;">Add up to 4 action buttons. Each button fires a webhook when tapped.</p>
+        <div class="terminal" style="max-width: 600px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">two-way-actions.sh</span>
+            </div>
+            <pre><span class="prompt">$</span> <span class="cmd">curl -X POST</span> <span class="url">https://bzap-server.fly.dev/v1/your_secret</span> \
+  <span class="cmd">-H</span> <span class="str">'Content-Type: application/json'</span> \
+  <span class="cmd">-d</span> <span class="str">'{
+    "title": "Deploy Ready",
+    "message": "v2.3.1 — all tests passing",
+    "actions": [
+      {
+        "id": "deploy",
+        "label": "Deploy to Prod",
+        "webhook": "https://your-ci.com/deploy"
+      },
+      {
+        "id": "rollback",
+        "label": "Rollback",
+        "webhook": "https://your-ci.com/rollback"
+      }
+    ]
+  }'</span>
+
+<span class="response">{"message":"Notification sent"}</span></pre>
         </div>
     </section>
 

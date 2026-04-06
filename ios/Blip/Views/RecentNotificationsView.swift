@@ -126,7 +126,7 @@ struct RecentNotificationsView: View {
         let allRecords = viewModel.sections.flatMap { $0.notifications }
         let content = NotificationExporter.export(allRecords, format: format)
         let ext = format == .json ? "json" : "csv"
-        let filename = "blip-notifications.\(ext)"
+        let filename = "bzap-notifications.\(ext)"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         try? content.write(to: url, atomically: true, encoding: .utf8)
         exportItem = ExportShareItem(url: url)

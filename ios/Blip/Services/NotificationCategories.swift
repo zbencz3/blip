@@ -37,22 +37,36 @@ enum NotificationCategories {
 
     static func registerDynamic(actions: [NotificationAction], categoryId: String) {
         let center = UNUserNotificationCenter.current()
-        center.getNotificationCategories { existing in
-            var categories = existing
-            let newActions = actions.map { action in
-                UNNotificationAction(
-                    identifier: action.id,
-                    title: action.label,
-                    options: action.destructive == true ? [.destructive] : []
-                )
-            }
-            let category = UNNotificationCategory(
-                identifier: categoryId,
-                actions: newActions,
-                intentIdentifiers: []
+        let newActions = actions.map { action in
+            UNNotificationAction(
+                identifier: action.id,
+                title: action.label,
+                options: action.destructive == true ? [.destructive] : []
             )
-            categories.insert(category)
-            center.setNotificationCategories(categories)
         }
+        let category = UNNotificationCategory(
+            identifier: categoryId,
+            actions: newActions,
+            intentIdentifiers: []
+        )
+        // Merge with known static categories to avoid overwriting them
+        let generalCat = UNNotificationCategory(
+            identifier: Self.generalCategory,
+            actions: [
+                UNNotificationAction(identifier: "COPY_MESSAGE", title: "Copy Message", options: []),
+                UNNotificationAction(identifier: "MARK_READ", title: "Mark as Read", options: [])
+            ],
+            intentIdentifiers: []
+        )
+        let urlCat = UNNotificationCategory(
+            identifier: Self.urlCategory,
+            actions: [
+                UNNotificationAction(identifier: "OPEN_URL", title: "Open URL", options: .foreground),
+                UNNotificationAction(identifier: "COPY_MESSAGE", title: "Copy Message", options: []),
+                UNNotificationAction(identifier: "MARK_READ", title: "Mark as Read", options: [])
+            ],
+            intentIdentifiers: []
+        )
+        center.setNotificationCategories([generalCat, urlCat, category])
     }
 }

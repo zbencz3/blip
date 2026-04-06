@@ -74,10 +74,27 @@ struct APIClient {
     // MARK: - Send Test
 
     func sendTest(secret: String) async throws {
+        let payload: [String: Any] = ["title": "Bzap", "message": "Test notification 🔔"]
+        try await sendPayload(payload, secret: secret)
+    }
+
+    func sendTestWithActions(secret: String) async throws {
+        let payload: [String: Any] = [
+            "title": "Deploy Ready",
+            "message": "v2.3.1 — all tests passing ✅",
+            "actions": [
+                ["id": "approve", "label": "Deploy to Prod", "webhook": "https://httpbin.org/post"],
+                ["id": "reject", "label": "Rollback", "webhook": "https://httpbin.org/post"]
+            ]
+        ]
+        try await sendPayload(payload, secret: secret)
+    }
+
+    private func sendPayload(_ payload: [String: Any], secret: String) async throws {
         var request = URLRequest(url: URL(string: "\(baseURL)/\(secret)")!)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(["title": "Blip", "message": "Test notification 🔔"])
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         let (_, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {

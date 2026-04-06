@@ -40,4 +40,8 @@ final class HomeViewModel {
     func sendTest() async {
         try? await apiClient.sendTest(secret: secretManager.currentSecret)
     }
+
+    func sendTestWithActions() async {
+        try? await apiClient.sendTestWithActions(secret: secretManager.currentSecret)
+    }
 }

@@ -249,6 +249,92 @@ enum TemplateLibrary {
             """,
             category: .scripting
         ),
+        // Two-Way Actions
+        WebhookTemplate(
+            name: "Deploy Approval",
+            icon: "checkmark.seal.fill",
+            iconColor: Color(red: 0.0, green: 0.78, blue: 0.35),
+            description: "Approve or rollback deploys from the notification",
+            curlTemplate: """
+            curl -s -X POST {{WEBHOOK_URL}} \\
+              -H 'Content-Type: application/json' \\
+              -d '{
+                "title": "Deploy Ready",
+                "message": "v2.3.1 — all tests passing",
+                "actions": [
+                  {
+                    "id": "deploy",
+                    "label": "Deploy to Prod",
+                    "webhook": "https://your-ci.com/deploy"
+                  },
+                  {
+                    "id": "rollback",
+                    "label": "Rollback",
+                    "webhook": "https://your-ci.com/rollback"
+                  }
+                ]
+              }'
+            """,
+            category: .actions
+        ),
+
+        WebhookTemplate(
+            name: "Home Assistant",
+            icon: "house.fill",
+            iconColor: Color(red: 0.03, green: 0.69, blue: 0.75),
+            description: "Motion alert with light and lock controls",
+            curlTemplate: """
+            curl -s -X POST {{WEBHOOK_URL}} \\
+              -H 'Content-Type: application/json' \\
+              -d '{
+                "title": "Motion Detected",
+                "message": "Front porch camera — 11:42 PM",
+                "interruption_level": "time-sensitive",
+                "actions": [
+                  {
+                    "id": "lights",
+                    "label": "Turn On Lights",
+                    "webhook": "http://ha.local/api/services/light/turn_on"
+                  },
+                  {
+                    "id": "lock",
+                    "label": "Lock Door",
+                    "webhook": "http://ha.local/api/services/lock/lock"
+                  }
+                ]
+              }'
+            """,
+            category: .actions
+        ),
+
+        WebhookTemplate(
+            name: "Server Restart",
+            icon: "server.rack",
+            iconColor: Color(red: 1.0, green: 0.27, blue: 0.23),
+            description: "Downtime alert with restart and scale-up buttons",
+            curlTemplate: """
+            curl -s -X POST {{WEBHOOK_URL}} \\
+              -H 'Content-Type: application/json' \\
+              -d '{
+                "title": "API Down",
+                "message": "502 errors for 2 minutes",
+                "interruption_level": "time-sensitive",
+                "actions": [
+                  {
+                    "id": "restart",
+                    "label": "Restart Server",
+                    "webhook": "https://your-server.com/restart"
+                  },
+                  {
+                    "id": "scale",
+                    "label": "Scale Up",
+                    "webhook": "https://your-server.com/scale"
+                  }
+                ]
+              }'
+            """,
+            category: .actions
+        ),
     ]
 
     static func templates(for category: TemplateCategory) -> [WebhookTemplate] {

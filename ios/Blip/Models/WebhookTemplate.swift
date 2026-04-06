@@ -11,6 +11,7 @@ struct WebhookTemplate: Identifiable, Hashable {
 }
 
 enum TemplateCategory: String, CaseIterable, Identifiable {
+    case actions = "Two-Way Actions"
     case cicd = "CI/CD"
     case monitoring = "Monitoring"
     case homeAutomation = "Home"

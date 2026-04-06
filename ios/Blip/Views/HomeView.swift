@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var showQRCode = false
     @State private var showTemplates = false
     @State private var showSubscription = false
+    @State private var showUseCases = false
 
     var body: some View {
         ZStack {
@@ -18,6 +19,15 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     // Navigation bar
                     HStack {
+                        Button { showNotifications = true } label: {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 20))
+                                .foregroundStyle(BlipColors.textPrimary)
+                                .frame(width: 40, height: 40)
+                                .background(BlipColors.cardBackground)
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(BlipColors.cardBorder, lineWidth: 0.5))
+                        }
                         Spacer()
                         Button { showSettings = true } label: {
                             Image(systemName: "gearshape.fill")
@@ -71,8 +81,17 @@ struct HomeView: View {
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundStyle(BlipColors.textSecondary)
                             Spacer()
-                            Button {
-                                Task { await viewModel.sendTest() }
+                            Menu {
+                                Button {
+                                    Task { await viewModel.sendTest() }
+                                } label: {
+                                    Label("Simple Notification", systemImage: "bell.fill")
+                                }
+                                Button {
+                                    Task { await viewModel.sendTestWithActions() }
+                                } label: {
+                                    Label("With Action Buttons", systemImage: "arrow.left.arrow.right")
+                                }
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "paperplane.fill")
@@ -145,8 +164,8 @@ struct HomeView: View {
                         Button { showTemplates = true } label: {
                             featurePill(icon: "doc.text", text: "Templates")
                         }
-                        Button { showNotifications = true } label: {
-                            featurePill(icon: "bell.fill", text: "History")
+                        Button { showUseCases = true } label: {
+                            featurePill(icon: "lightbulb.fill", text: "Use Cases")
                         }
                     }
 
@@ -174,6 +193,9 @@ struct HomeView: View {
                 TemplatesView(secretManager: viewModel.secretManager)
             }
             .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showUseCases) {
+            UseCasesView()
         }
         .sheet(isPresented: $showSubscription) {
             NavigationStack {

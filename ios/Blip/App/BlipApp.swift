@@ -2,19 +2,9 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 
-#if canImport(UIKit)
-import UIKit
-#else
-import AppKit
-#endif
-
 @main
 struct BlipApp: App {
-    #if canImport(UIKit)
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    #else
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    #endif
 
     @State private var secretManager = SecretManager()
     @State private var pushManager = PushNotificationManager()
@@ -31,11 +21,7 @@ struct BlipApp: App {
     }()
 
     private var deviceName: String {
-        #if canImport(UIKit)
-        return UIDevice.current.name
-        #else
-        return Host.current().localizedName ?? "Mac"
-        #endif
+        UIDevice.current.name
     }
 
     var body: some Scene {
@@ -86,13 +72,5 @@ struct BlipApp: App {
                 }
         }
         .modelContainer(sharedModelContainer)
-
-        #if os(macOS)
-        MenuBarExtra("Blip", systemImage: "bell.badge.fill") {
-            MenuBarView(secretManager: secretManager)
-        }
-        .menuBarExtraStyle(.window)
-        .modelContainer(sharedModelContainer)
-        #endif
     }
 }
