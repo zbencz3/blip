@@ -490,6 +490,125 @@ struct NotificationControllerTests {
         })
     }
 
+    @Test("Send with non-http open_url returns 422")
+    func sendInvalidOpenUrl() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode([
+                "secret": secret,
+                "device_token": "token_openurl",
+                "device_name": "iPhone"
+            ])
+        })
+
+        // Reject dangerous schemes
+        for scheme in ["tel:+1234567890", "javascript:alert(1)", "file:///etc/passwd", "data:text/html,hi"] {
+            try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+                try req.content.encode(["message": "Test", "open_url": scheme])
+            }, afterResponse: { res async in
+                #expect(res.status == .unprocessableEntity, "Expected 422 for open_url: \(scheme)")
+            })
+        }
+    }
+
+    @Test("Send with https open_url is accepted")
+    func sendValidOpenUrl() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode([
+                "secret": secret,
+                "device_token": "token_openurl_ok",
+                "device_name": "iPhone"
+            ])
+        })
+
+        for url in ["https://example.com/page", "http://example.com/page"] {
+            try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+                try req.content.encode(["message": "Test", "open_url": url])
+            }, afterResponse: { res async in
+                #expect(res.status == .ok, "Expected 200 for open_url: \(url)")
+            })
+        }
+    }
+
+    @Test("Action with http webhook returns 422")
+    func sendActionHttpWebhook() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode([
+                "secret": secret,
+                "device_token": "token_webhook_http",
+                "device_name": "iPhone"
+            ])
+        })
+
+        struct ActionPayload: Content {
+            let message: String
+            let actions: [ActionItem]
+            struct ActionItem: Content {
+                let id: String
+                let label: String
+                let webhook: String
+            }
+        }
+
+        let payload = ActionPayload(
+            message: "Test",
+            actions: [.init(id: "act1", label: "Open", webhook: "http://example.com/callback")]
+        )
+
+        try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+            try req.content.encode(payload)
+        }, afterResponse: { res async in
+            #expect(res.status == .unprocessableEntity)
+        })
+    }
+
+    @Test("Action with https webhook is accepted")
+    func sendActionHttpsWebhook() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode([
+                "secret": secret,
+                "device_token": "token_webhook_https",
+                "device_name": "iPhone"
+            ])
+        })
+
+        struct ActionPayload: Content {
+            let message: String
+            let actions: [ActionItem]
+            struct ActionItem: Content {
+                let id: String
+                let label: String
+                let webhook: String
+            }
+        }
+
+        let payload = ActionPayload(
+            message: "Test",
+            actions: [.init(id: "act1", label: "Open", webhook: "https://example.com/callback")]
+        )
+
+        try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+            try req.content.encode(payload)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+        })
+    }
+
     @Test("Send via device secret sends to single device")
     func sendViaDeviceSecret() async throws {
         let app = try await makeTestApp()
@@ -527,5 +646,91 @@ struct NotificationControllerTests {
         let mock = mockAPNs(from: app)
         #expect(mock.sent.count == 1)
         #expect(mock.sent[0].deviceToken == "dev_token_1")
+    }
+}
+
+@Suite("Rate Limiting")
+struct RateLimitTests {
+    func makeRateLimitedApp() async throws -> Application {
+        let app = try await Application.make(.testing)
+        app.databases.use(.sqlite(.memory), as: .sqlite)
+        app.migrations.add(CreateUser())
+        app.migrations.add(CreateDeviceRegistration())
+        try await app.autoMigrate()
+        app.apnsServiceCustom = MockAPNsService()
+
+        // Fresh store with a low limit for testing
+        let testStore = RateLimitStore(limit: 3, window: 60)
+        app.get { req async in "ok" }
+        app.get("health") { req async in ["status": "ok"] }
+        try app.register(collection: DeviceController())
+        try app.register(collection: SecretController())
+        let rateLimited = app.grouped(RateLimitMiddleware(store: testStore))
+        try rateLimited.register(collection: NotificationController(apnsService: app.apnsServiceCustom))
+        return app
+    }
+
+    @Test("Exceeding rate limit returns 429")
+    func rateLimitExceeded() async throws {
+        let app = try await makeRateLimitedApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode([
+                "secret": secret,
+                "device_token": "rl_token",
+                "device_name": "iPhone"
+            ])
+        })
+
+        // First 3 should succeed
+        for _ in 1...3 {
+            try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+                try req.content.encode(["message": "Hello"])
+            }, afterResponse: { res async in
+                #expect(res.status == .ok)
+            })
+        }
+
+        // 4th should be rate limited
+        try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+            try req.content.encode(["message": "Hello"])
+        }, afterResponse: { res async in
+            #expect(res.status == .tooManyRequests)
+        })
+    }
+
+    @Test("Different secrets have independent rate limits")
+    func rateLimitsArePerSecret() async throws {
+        let app = try await makeRateLimitedApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret1 = SecretGenerator.generate()
+        let secret2 = SecretGenerator.generate()
+
+        for secret in [secret1, secret2] {
+            try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+                try req.content.encode([
+                    "secret": secret,
+                    "device_token": "rl_token_\(secret.suffix(4))",
+                    "device_name": "iPhone"
+                ])
+            })
+        }
+
+        // Exhaust secret1's limit
+        for _ in 1...3 {
+            try await app.test(.POST, "v1/\(secret1)", beforeRequest: { req async throws in
+                try req.content.encode(["message": "Hello"])
+            })
+        }
+
+        // secret2 should still work
+        try await app.test(.POST, "v1/\(secret2)", beforeRequest: { req async throws in
+            try req.content.encode(["message": "Hello"])
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+        })
     }
 }

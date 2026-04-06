@@ -30,6 +30,12 @@ struct NotificationRequest: Content {
             throw Abort(.unprocessableEntity, reason: "Either 'title' or 'message' must be provided and non-empty.")
         }
 
+        if let openUrl {
+            guard openUrl.hasPrefix("https://") || openUrl.hasPrefix("http://") else {
+                throw Abort(.unprocessableEntity, reason: "open_url must start with 'https://' or 'http://'.")
+            }
+        }
+
         if let actions {
             guard actions.count <= 4 else {
                 throw Abort(.unprocessableEntity, reason: "Maximum 4 actions allowed.")
@@ -40,6 +46,11 @@ struct NotificationRequest: Content {
                 }
                 guard !action.label.isEmpty else {
                     throw Abort(.unprocessableEntity, reason: "Action 'label' must be non-empty.")
+                }
+                if let webhook = action.webhook {
+                    guard webhook.hasPrefix("https://") else {
+                        throw Abort(.unprocessableEntity, reason: "Action webhook URL must start with 'https://'.")
+                    }
                 }
             }
         }

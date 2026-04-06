@@ -1,5 +1,8 @@
 import Vapor
 
+// Shared rate-limit store — one instance per process, covers all notification endpoints.
+let rateLimitStore = RateLimitStore()
+
 func routes(_ app: Application) throws {
     app.get { req async in
         "Bzap API is running."
@@ -11,5 +14,7 @@ func routes(_ app: Application) throws {
 
     try app.register(collection: DeviceController())
     try app.register(collection: SecretController())
-    try app.register(collection: NotificationController(apnsService: app.apnsServiceCustom))
+
+    let rateLimited = app.grouped(RateLimitMiddleware(store: rateLimitStore))
+    try rateLimited.register(collection: NotificationController(apnsService: app.apnsServiceCustom))
 }

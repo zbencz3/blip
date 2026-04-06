@@ -26,6 +26,11 @@ final class NotificationHistoryViewModel {
         sections = store?.fetchGroupedByDate() ?? []
     }
 
+    func delete(_ record: NotificationRecord) {
+        store?.delete(record)
+        refresh()
+    }
+
     func deleteAll() {
         store?.deleteAll()
         refresh()

@@ -57,6 +57,11 @@ struct NotificationStore {
             .map { (date: $0.key, notifications: $0.value) }
     }
 
+    func delete(_ record: NotificationRecord) {
+        modelContext.delete(record)
+        try? modelContext.save()
+    }
+
     func deleteAll() {
         do {
             try modelContext.delete(model: NotificationRecord.self)

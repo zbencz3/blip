@@ -20,6 +20,10 @@ primary_region = "iad"
     hard_limit = 250
     soft_limit = 200
 
+[mounts]
+  source = "bzap_data"
+  destination = "/data"
+
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"

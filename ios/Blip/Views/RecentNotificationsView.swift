@@ -41,6 +41,15 @@ struct RecentNotificationsView: View {
                             VStack(spacing: 0) {
                                 ForEach(section.notifications) { notification in
                                     NotificationRow(notification: notification)
+                                        .swipeActions(edge: .trailing) {
+                                            Button(role: .destructive) {
+                                                withAnimation {
+                                                    viewModel.delete(notification)
+                                                }
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
+                                        }
                                     if notification.id != section.notifications.last?.id {
                                         Divider().background(BlipColors.cardBorder)
                                     }

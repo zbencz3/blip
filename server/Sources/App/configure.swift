@@ -7,7 +7,8 @@ import APNS
 import Crypto
 
 func configure(_ app: Application) async throws {
-    app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
+    let dbPath = Environment.get("DB_PATH") ?? (app.environment == .production ? "/data/db.sqlite" : "db.sqlite")
+    app.databases.use(.sqlite(.file(dbPath)), as: .sqlite)
 
     app.migrations.add(CreateUser())
     app.migrations.add(CreateDeviceRegistration())
