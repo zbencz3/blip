@@ -1066,4 +1066,71 @@ struct ResponseChannelTests {
             #expect(res.status == .notFound)
         })
     }
+
+    @Test("Submit response with text input")
+    func submitWithTextInput() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode(["secret": secret, "device_token": "token_text", "device_name": "iPhone"])
+        })
+
+        struct RCPayload: Content {
+            let message: String
+            let actions: [RCAction]
+            struct RCAction: Content {
+                let id: String
+                let label: String
+                let response_channel: Bool
+                let type: String?
+                let text_input_placeholder: String?
+            }
+        }
+
+        var responseID: String?
+
+        // Send notification with text input action
+        try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+            try req.content.encode(RCPayload(
+                message: "What branch?",
+                actions: [.init(id: "reply", label: "Reply", response_channel: true, type: "text_input", text_input_placeholder: "Branch name...")]
+            ))
+        }, afterResponse: { res async in
+            let response = try? res.content.decode(NotificationResponse.self)
+            responseID = response?.responseId
+            #expect(responseID != nil)
+        })
+
+        // Submit with text
+        try await app.test(.POST, "v1/responses/\(responseID!)", beforeRequest: { req async throws in
+            try req.content.encode(ResponseSubmission(actionID: "reply", text: "feature/response-channel", deviceName: "iPhone"))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+        })
+
+        // Poll — should have text
+        try await app.test(.GET, "v1/responses/\(responseID!)", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let poll = try? res.content.decode(PollResponse.self)
+            #expect(poll?.status == "responded")
+            #expect(poll?.actionID == "reply")
+            #expect(poll?.text == "feature/response-channel")
+            #expect(poll?.deviceName == "iPhone")
+        })
+    }
+
+    @Test("Poll without auth returns unauthorized")
+    func pollNoAuth() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let fakeID = UUID().uuidString
+        try await app.test(.GET, "v1/responses/\(fakeID)", afterResponse: { res async in
+            #expect(res.status == .unauthorized)
+        })
+    }
 }
