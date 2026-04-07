@@ -19,9 +19,12 @@ struct NotificationController: RouteCollection {
         notification.message = notification.message?.trimmingCharacters(in: .whitespacesAndNewlines)
         if notification.message?.isEmpty == true { notification.message = nil }
         try notification.validate()
-        let devices = try await resolveDevices(secret: bearer.token, on: req.db)
-        try await sendToDevices(notification: notification, devices: devices, logger: req.logger)
-        return .sent
+        let (user, devices) = try await resolveUserAndDevices(secret: bearer.token, on: req.db)
+        let responseID = try await createPendingResponseIfNeeded(notification: notification, user: user, on: req.db)
+        let baseURL = Environment.get("BASE_URL") ?? "https://bzap-server.fly.dev"
+        let responseURL = responseID.map { "\(baseURL)/v1/responses/\($0)" }
+        try await sendToDevices(notification: notification, devices: devices, responseID: responseID, responseURL: responseURL, logger: req.logger)
+        return NotificationResponse(message: "Notification sent", responseId: responseID)
     }
 
     @Sendable
@@ -37,9 +40,12 @@ struct NotificationController: RouteCollection {
         notification.message = notification.message?.trimmingCharacters(in: .whitespacesAndNewlines)
         if notification.message?.isEmpty == true { notification.message = nil }
         try notification.validate()
-        let devices = try await resolveDevices(secret: secret, on: req.db)
-        try await sendToDevices(notification: notification, devices: devices, logger: req.logger)
-        return .sent
+        let (user, devices) = try await resolveUserAndDevices(secret: secret, on: req.db)
+        let responseID = try await createPendingResponseIfNeeded(notification: notification, user: user, on: req.db)
+        let baseURL = Environment.get("BASE_URL") ?? "https://bzap-server.fly.dev"
+        let responseURL = responseID.map { "\(baseURL)/v1/responses/\($0)" }
+        try await sendToDevices(notification: notification, devices: devices, responseID: responseID, responseURL: responseURL, logger: req.logger)
+        return NotificationResponse(message: "Notification sent", responseId: responseID)
     }
 
     private func parseNotification(from req: Request) throws -> NotificationRequest {
@@ -51,13 +57,14 @@ struct NotificationController: RouteCollection {
         return try req.content.decode(NotificationRequest.self)
     }
 
-    private func resolveDevices(secret: String, on db: Database) async throws -> [DeviceRegistration] {
+    private func resolveUserAndDevices(secret: String, on db: Database) async throws -> (User, [DeviceRegistration]) {
         // Check device-specific secret first
         if let device = try await DeviceRegistration.query(on: db)
             .filter(\.$deviceSecret == secret)
+            .with(\.$user)
             .first()
         {
-            return [device]
+            return (device.user, [device])
         }
 
         // Then check user secret
@@ -80,12 +87,27 @@ struct NotificationController: RouteCollection {
             throw Abort(.notFound, reason: "No devices registered.")
         }
 
-        return devices
+        return (user, devices)
+    }
+
+    private func createPendingResponseIfNeeded(
+        notification: NotificationRequest,
+        user: User,
+        on db: Database
+    ) async throws -> String? {
+        let hasResponseChannel = notification.actions?.contains { $0.responseChannel == true } ?? false
+        guard hasResponseChannel, let userID = user.id else { return nil }
+
+        let pending = PendingResponse(userID: userID)
+        try await pending.save(on: db)
+        return pending.id?.uuidString
     }
 
     private func sendToDevices(
         notification: NotificationRequest,
         devices: [DeviceRegistration],
+        responseID: String? = nil,
+        responseURL: String? = nil,
         logger: Logger
     ) async throws {
         let payload = NotificationPayload(
@@ -99,7 +121,9 @@ struct NotificationController: RouteCollection {
             expirationDate: notification.expirationDate,
             interruptionLevel: notification.interruptionLevel,
             filterCriteria: notification.filterCriteria,
-            actions: notification.actions
+            actions: notification.actions,
+            responseID: responseID,
+            responseURL: responseURL
         )
 
         var errors: [Error] = []

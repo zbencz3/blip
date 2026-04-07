@@ -12,9 +12,20 @@ func configure(_ app: Application) async throws {
 
     app.migrations.add(CreateUser())
     app.migrations.add(CreateDeviceRegistration())
+    app.migrations.add(CreatePendingResponse())
     try await app.autoMigrate()
 
     configureAPNs(app)
+
+    // TTL cleanup: delete pending responses older than 5 minutes
+    app.eventLoopGroup.next().scheduleRepeatedTask(initialDelay: .seconds(60), delay: .seconds(60)) { _ in
+        Task {
+            let cutoff = Date().addingTimeInterval(-300)
+            try? await PendingResponse.query(on: app.db)
+                .filter(\.$createdAt < cutoff)
+                .delete()
+        }
+    }
 
     try routes(app)
 }

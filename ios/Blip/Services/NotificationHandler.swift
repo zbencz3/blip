@@ -58,13 +58,36 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
             completionHandler()
 
         default:
-            // Check dynamic action webhooks
+            // Check dynamic action webhooks and response channels
             if let actionsData = userInfo["actions"] as? [[String: Any]],
-               let actionDict = actionsData.first(where: { ($0["id"] as? String) == actionIdentifier }),
-               let webhookURL = actionDict["webhook"] as? String {
+               let actionDict = actionsData.first(where: { ($0["id"] as? String) == actionIdentifier }) {
+                // Extract values before Task to avoid capturing non-Sendable types
+                let webhookURL = actionDict["webhook"] as? String
+                let hasResponseChannel = actionDict["response_channel"] as? Bool == true
+                let responseURL = userInfo["response_url"] as? String
+                let userText = (response as? UNTextInputNotificationResponse)?.userText
+                #if canImport(UIKit)
+                nonisolated(unsafe) let deviceName = UIDevice.current.name
+                #else
+                let deviceName = Host.current().localizedName ?? "Mac"
+                #endif
                 nonisolated(unsafe) let handler = completionHandler
                 Task { @Sendable in
-                    await ActionWebhookService.fire(url: webhookURL)
+                    // Fire legacy webhook if present (backward compatible)
+                    if let webhookURL {
+                        await ActionWebhookService.fire(url: webhookURL)
+                    }
+
+                    // Submit response channel if enabled
+                    if hasResponseChannel, let responseURL {
+                        await ResponseSubmitter.submit(
+                            url: responseURL,
+                            actionID: actionIdentifier,
+                            text: userText,
+                            deviceName: deviceName
+                        )
+                    }
+
                     handler()
                 }
                 return
@@ -96,7 +119,10 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
                 id: id,
                 label: label,
                 webhook: dict["webhook"] as? String,
-                destructive: dict["destructive"] as? Bool
+                destructive: dict["destructive"] as? Bool,
+                responseChannel: dict["response_channel"] as? Bool,
+                type: dict["type"] as? String,
+                textInputPlaceholder: dict["text_input_placeholder"] as? String
             )
         }
 

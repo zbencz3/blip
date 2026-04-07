@@ -92,6 +92,11 @@ struct HomeView: View {
                                 } label: {
                                     Label("With Action Buttons", systemImage: "arrow.left.arrow.right")
                                 }
+                                Button {
+                                    Task { await viewModel.sendTestWithResponseChannel() }
+                                } label: {
+                                    Label("With Response Channel", systemImage: "text.bubble.fill")
+                                }
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "paperplane.fill")

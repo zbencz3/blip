@@ -12,6 +12,8 @@ struct NotificationPayload: Sendable {
     let interruptionLevel: String?
     let filterCriteria: String?
     let actions: [NotificationAction]?
+    let responseID: String?
+    let responseURL: String?
 }
 
 protocol APNsServiceProtocol: Sendable {

@@ -26,6 +26,19 @@ class NotificationService: UNNotificationServiceExtension {
             guard let id = dict["id"] as? String,
                   let label = dict["label"] as? String else { return nil }
             let destructive = dict["destructive"] as? Bool ?? false
+            let type = dict["type"] as? String
+
+            if type == "text_input" {
+                let placeholder = dict["text_input_placeholder"] as? String ?? "Type your response..."
+                return UNTextInputNotificationAction(
+                    identifier: id,
+                    title: label,
+                    options: destructive ? [.destructive] : [],
+                    textInputButtonTitle: "Send",
+                    textInputPlaceholder: placeholder
+                )
+            }
+
             return UNNotificationAction(
                 identifier: id,
                 title: label,

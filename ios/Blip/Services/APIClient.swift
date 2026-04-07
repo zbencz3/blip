@@ -90,6 +90,29 @@ struct APIClient {
         try await sendPayload(payload, secret: secret)
     }
 
+    func sendTestWithResponseChannel(secret: String) async throws {
+        let payload: [String: Any] = [
+            "title": "Feedback Request",
+            "message": "How's the new build working?",
+            "response_url": "https://httpbin.org/post",
+            "actions": [
+                [
+                    "id": "reply",
+                    "label": "Reply",
+                    "type": "text_input",
+                    "text_input_placeholder": "Type your feedback...",
+                    "response_channel": true
+                ],
+                [
+                    "id": "thumbsup",
+                    "label": "👍 Looks Good",
+                    "response_channel": true
+                ]
+            ]
+        ]
+        try await sendPayload(payload, secret: secret)
+    }
+
     private func sendPayload(_ payload: [String: Any], secret: String) async throws {
         var request = URLRequest(url: URL(string: "\(baseURL)/\(secret)")!)
         request.httpMethod = "POST"
