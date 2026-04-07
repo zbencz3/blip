@@ -88,7 +88,7 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
                         )
                     }
 
-                    handler()
+                    DispatchQueue.main.async { handler() }
                 }
                 return
             } else if let urlString = userInfo["open_url"] as? String,
