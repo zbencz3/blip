@@ -65,7 +65,7 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
                 nonisolated(unsafe) let handler = completionHandler
                 Task { @Sendable in
                     await ActionWebhookService.fire(url: webhookURL)
-                    handler()
+                    DispatchQueue.main.async { handler() }
                 }
                 return
             } else if let urlString = userInfo["open_url"] as? String,
