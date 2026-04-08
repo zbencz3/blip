@@ -216,7 +216,7 @@ struct HomeView: View {
         guard !hasPlayedStartup,
               !UserDefaults.standard.bool(forKey: "startup_sound_disabled") else { return }
         hasPlayedStartup = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             guard let url = Bundle.main.url(forResource: "dialup", withExtension: "wav") else { return }
             startupPlayer = try? AVAudioPlayer(contentsOf: url)
             startupPlayer?.volume = 0.5
