@@ -66,23 +66,17 @@ struct HomeView: View {
 
                     // Status indicator
                     HStack(spacing: 8) {
-                        ZStack {
-                            Circle()
-                                .fill(.green.opacity(0.3))
-                                .frame(width: 8, height: 8)
-                                .scaleEffect(statusPulse ? 2.5 : 1.0)
-                                .opacity(statusPulse ? 0 : 0.6)
-                            Circle()
-                                .fill(.green)
-                                .frame(width: 8, height: 8)
-                        }
+                        Circle()
+                            .fill(.green)
+                            .frame(width: 8, height: 8)
+                            .opacity(statusPulse ? 1.0 : 0.2)
                         Text("Ready to receive")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundStyle(.green)
                     }
                     .padding(.horizontal, 12)
                     .onAppear {
-                        withAnimation(.easeOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                        withAnimation(.easeInOut(duration: 1.0).repeatForever()) {
                             statusPulse = true
                         }
                     }
