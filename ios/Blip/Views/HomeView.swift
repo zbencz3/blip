@@ -211,9 +211,9 @@ struct HomeView: View {
     private func startStatusLoop() {
         Task {
             while true {
-                try? await Task.sleep(for: .seconds(2))
+                try? await Task.sleep(for: .milliseconds(800))
                 statusOn = false
-                try? await Task.sleep(for: .seconds(1))
+                try? await Task.sleep(for: .milliseconds(400))
                 statusOn = true
             }
         }
