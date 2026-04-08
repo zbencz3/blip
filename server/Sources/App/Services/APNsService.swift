@@ -7,7 +7,7 @@ struct LiveAPNsService: APNsServiceProtocol {
 
     func send(_ payload: NotificationPayload, to deviceToken: String) async throws {
         let sound: APNSAlertNotificationSound? = if let s = payload.sound {
-            s == "default" ? .default : .fileName(s)
+            s == "default" ? .default : .fileName(s.contains(".") ? s : "\(s).caf")
         } else {
             nil
         }
