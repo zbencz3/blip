@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var showTemplates = false
     @State private var showSubscription = false
     @State private var showUseCases = false
+    @State private var boltPhase: CGFloat = 0
 
     var body: some View {
         ZStack {
@@ -47,6 +48,10 @@ struct HomeView: View {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 36))
                             .foregroundStyle(BlipColors.accentPurple)
+                            .shadow(color: BlipColors.accentPurple.opacity(boltPhase), radius: 12)
+                            .shadow(color: BlipColors.accentPurple.opacity(boltPhase * 0.5), radius: 24)
+                            .scaleEffect(1.0 + boltPhase * 0.12)
+                            .rotationEffect(.degrees(boltPhase > 0.5 ? -3 : boltPhase > 0 ? 3 : 0))
                         VStack(alignment: .leading, spacing: 4) {
                             Text("bzap")
                                 .font(.system(size: 44, weight: .black, design: .monospaced))
@@ -56,6 +61,7 @@ struct HomeView: View {
                                 .foregroundStyle(BlipColors.textSecondary)
                         }
                     }
+                    .onAppear { startBuzzLoop() }
 
                     // Status indicator
                     HStack(spacing: 8) {
@@ -202,6 +208,24 @@ struct HomeView: View {
                 SubscriptionView(trialManager: trialManager)
             }
             .preferredColorScheme(.dark)
+        }
+    }
+
+    private func startBuzzLoop() {
+        Task {
+            while true {
+                try? await Task.sleep(for: .seconds(Double.random(in: 5...9)))
+                // Flash on
+                withAnimation(.easeOut(duration: 0.08)) { boltPhase = 1.0 }
+                try? await Task.sleep(for: .milliseconds(80))
+                // Quick flicker
+                withAnimation(.easeIn(duration: 0.06)) { boltPhase = 0.2 }
+                try? await Task.sleep(for: .milliseconds(60))
+                withAnimation(.easeOut(duration: 0.06)) { boltPhase = 0.8 }
+                try? await Task.sleep(for: .milliseconds(80))
+                // Fade out
+                withAnimation(.easeIn(duration: 0.4)) { boltPhase = 0 }
+            }
         }
     }
 
