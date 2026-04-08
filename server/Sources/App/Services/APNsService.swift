@@ -9,7 +9,7 @@ struct LiveAPNsService: APNsServiceProtocol {
         let sound: APNSAlertNotificationSound? = if let s = payload.sound {
             s == "default" ? .default : .fileName(s.contains(".") ? s : "\(s).caf")
         } else {
-            nil
+            .fileName("terminal_beep.caf")
         }
 
         let interruptionLevel = mapInterruptionLevel(payload.interruptionLevel)
