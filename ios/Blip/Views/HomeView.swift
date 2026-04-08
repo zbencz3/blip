@@ -10,8 +10,7 @@ struct HomeView: View {
     @State private var showTemplates = false
     @State private var showSubscription = false
     @State private var showUseCases = false
-    @State private var boltPhase: CGFloat = 0
-    @State private var statusPulse = false
+    @State private var statusStep = 0
 
     var body: some View {
         ZStack {
@@ -49,10 +48,6 @@ struct HomeView: View {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 36))
                             .foregroundStyle(BlipColors.accentPurple)
-                            .shadow(color: BlipColors.accentPurple.opacity(boltPhase), radius: 12)
-                            .shadow(color: BlipColors.accentPurple.opacity(boltPhase * 0.5), radius: 24)
-                            .scaleEffect(1.0 + boltPhase * 0.12)
-                            .rotationEffect(.degrees(boltPhase > 0.5 ? -3 : boltPhase > 0 ? 3 : 0))
                         VStack(alignment: .leading, spacing: 4) {
                             Text("bzap")
                                 .font(.system(size: 44, weight: .black, design: .monospaced))
@@ -62,24 +57,25 @@ struct HomeView: View {
                                 .foregroundStyle(BlipColors.textSecondary)
                         }
                     }
-                    .onAppear { startBuzzLoop() }
 
-                    // Status indicator
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(.green)
-                            .frame(width: 8, height: 8)
-                            .opacity(statusPulse ? 1.0 : 0.2)
+                    // Status indicator — retro wifi-connecting style
+                    HStack(spacing: 4) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Circle()
+                                .fill(.green)
+                                .frame(width: 6, height: 6)
+                                .opacity(statusStep > i ? 1.0 : 0.15)
+                        }
                         Text("Ready to receive")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundStyle(.green)
+                            .padding(.leading, 4)
                     }
                     .padding(.horizontal, 12)
-                    .onAppear {
-                        withAnimation(.easeInOut(duration: 1.0).repeatForever()) {
-                            statusPulse = true
-                        }
-                    }
+                    .padding(.vertical, 6)
+                    .background(Color.green.opacity(0.1))
+                    .clipShape(Capsule())
+                    .onAppear { startStatusLoop() }
                     .padding(.vertical, 6)
                     .background(Color.green.opacity(0.1))
                     .clipShape(Capsule())
@@ -218,20 +214,19 @@ struct HomeView: View {
         }
     }
 
-    private func startBuzzLoop() {
+    private func startStatusLoop() {
         Task {
             while true {
-                try? await Task.sleep(for: .seconds(Double.random(in: 5...9)))
-                // Flash on
-                withAnimation(.easeOut(duration: 0.08)) { boltPhase = 1.0 }
-                try? await Task.sleep(for: .milliseconds(80))
-                // Quick flicker
-                withAnimation(.easeIn(duration: 0.06)) { boltPhase = 0.2 }
-                try? await Task.sleep(for: .milliseconds(60))
-                withAnimation(.easeOut(duration: 0.06)) { boltPhase = 0.8 }
-                try? await Task.sleep(for: .milliseconds(80))
-                // Fade out
-                withAnimation(.easeIn(duration: 0.4)) { boltPhase = 0 }
+                // Light up dots one by one
+                for step in 1...3 {
+                    withAnimation(.easeInOut(duration: 0.2)) { statusStep = step }
+                    try? await Task.sleep(for: .milliseconds(300))
+                }
+                // Hold fully lit
+                try? await Task.sleep(for: .seconds(1.5))
+                // Reset
+                withAnimation(.easeInOut(duration: 0.15)) { statusStep = 0 }
+                try? await Task.sleep(for: .milliseconds(400))
             }
         }
     }
