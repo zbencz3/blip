@@ -94,6 +94,22 @@ struct SettingsView: View {
                             }
                         }
 
+                        // Startup Sound
+                        SettingsSectionCard {
+                            Toggle(isOn: Binding(
+                                get: { !UserDefaults.standard.bool(forKey: "startup_sound_disabled") },
+                                set: { UserDefaults.standard.set(!$0, forKey: "startup_sound_disabled") }
+                            )) {
+                                SettingsRow(
+                                    icon: "speaker.wave.2.fill",
+                                    iconColor: .purple,
+                                    title: "Startup Sound"
+                                )
+                            }
+                            .tint(BlipColors.accentPurple)
+                            .padding(.trailing, 16)
+                        }
+
                         // Notification Settings
                         SettingsSectionCard {
                             Button {
