@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 struct HomeView: View {
@@ -11,6 +12,8 @@ struct HomeView: View {
     @State private var showSubscription = false
     @State private var showUseCases = false
     @State private var statusOn = true
+    @State private var startupPlayer: AVAudioPlayer?
+    @State private var hasPlayedStartup = false
 
     var body: some View {
         ZStack {
@@ -206,6 +209,17 @@ struct HomeView: View {
             }
             .preferredColorScheme(.dark)
         }
+        .onAppear { playStartupSound() }
+    }
+
+    private func playStartupSound() {
+        guard !hasPlayedStartup,
+              !UserDefaults.standard.bool(forKey: "startup_sound_disabled"),
+              let url = Bundle.main.url(forResource: "dialup", withExtension: "wav") else { return }
+        hasPlayedStartup = true
+        startupPlayer = try? AVAudioPlayer(contentsOf: url)
+        startupPlayer?.volume = 0.5
+        startupPlayer?.play()
     }
 
     private func startStatusLoop() {
