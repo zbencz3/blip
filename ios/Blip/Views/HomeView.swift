@@ -73,9 +73,6 @@ struct HomeView: View {
                     .background(Color.green.opacity(0.1))
                     .clipShape(Capsule())
                     .onAppear { startStatusLoop() }
-                    .padding(.vertical, 6)
-                    .background(Color.green.opacity(0.1))
-                    .clipShape(Capsule())
 
                     // Curl snippet
                     VStack(alignment: .leading, spacing: 8) {
