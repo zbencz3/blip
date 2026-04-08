@@ -10,7 +10,7 @@ struct HomeView: View {
     @State private var showTemplates = false
     @State private var showSubscription = false
     @State private var showUseCases = false
-    @State private var statusStep = 0
+    @State private var statusOn = true
 
     var body: some View {
         ZStack {
@@ -58,18 +58,15 @@ struct HomeView: View {
                         }
                     }
 
-                    // Status indicator — retro wifi-connecting style
-                    HStack(spacing: 4) {
-                        ForEach(0..<3, id: \.self) { i in
-                            Circle()
-                                .fill(.green)
-                                .frame(width: 6, height: 6)
-                                .opacity(statusStep > i ? 1.0 : 0.15)
-                        }
+                    // Status indicator
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(.green)
+                            .frame(width: 8, height: 8)
+                            .opacity(statusOn ? 1.0 : 0)
                         Text("Ready to receive")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundStyle(.green)
-                            .padding(.leading, 4)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
@@ -217,16 +214,10 @@ struct HomeView: View {
     private func startStatusLoop() {
         Task {
             while true {
-                // Light up dots one by one
-                for step in 1...3 {
-                    withAnimation(.easeInOut(duration: 0.2)) { statusStep = step }
-                    try? await Task.sleep(for: .milliseconds(300))
-                }
-                // Hold fully lit
-                try? await Task.sleep(for: .seconds(1.5))
-                // Reset
-                withAnimation(.easeInOut(duration: 0.15)) { statusStep = 0 }
-                try? await Task.sleep(for: .milliseconds(400))
+                try? await Task.sleep(for: .seconds(2))
+                statusOn = false
+                try? await Task.sleep(for: .seconds(1))
+                statusOn = true
             }
         }
     }
