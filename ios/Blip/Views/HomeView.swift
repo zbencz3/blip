@@ -214,12 +214,14 @@ struct HomeView: View {
 
     private func playStartupSound() {
         guard !hasPlayedStartup,
-              !UserDefaults.standard.bool(forKey: "startup_sound_disabled"),
-              let url = Bundle.main.url(forResource: "dialup", withExtension: "wav") else { return }
+              !UserDefaults.standard.bool(forKey: "startup_sound_disabled") else { return }
         hasPlayedStartup = true
-        startupPlayer = try? AVAudioPlayer(contentsOf: url)
-        startupPlayer?.volume = 0.5
-        startupPlayer?.play()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            guard let url = Bundle.main.url(forResource: "dialup", withExtension: "wav") else { return }
+            startupPlayer = try? AVAudioPlayer(contentsOf: url)
+            startupPlayer?.volume = 0.5
+            startupPlayer?.play()
+        }
     }
 
     private func startStatusLoop() {
