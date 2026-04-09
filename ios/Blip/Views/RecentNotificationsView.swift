@@ -13,54 +13,51 @@ struct RecentNotificationsView: View {
             ZStack {
                 BlipColors.background.ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        RetentionPicker(selection: Binding(
-                            get: { viewModel.retention },
-                            set: { viewModel.setRetention($0) }
-                        ))
-
-                        if viewModel.sections.isEmpty {
-                            VStack(spacing: 12) {
-                                Image(systemName: "bell.slash")
-                                    .font(.system(size: 40))
-                                    .foregroundStyle(BlipColors.textSecondary)
-                                Text("No notifications yet")
-                                    .font(BlipFonts.body)
-                                    .foregroundStyle(BlipColors.textSecondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 60)
+                if viewModel.sections.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "bell.slash")
+                            .font(.system(size: 40))
+                            .foregroundStyle(BlipColors.textSecondary)
+                        Text("No notifications yet")
+                            .font(.system(size: 14, design: .monospaced))
+                            .foregroundStyle(BlipColors.textSecondary)
+                    }
+                } else {
+                    List {
+                        // Retention picker
+                        Section {
+                            RetentionPicker(selection: Binding(
+                                get: { viewModel.retention },
+                                set: { viewModel.setRetention($0) }
+                            ))
                         }
+                        .listRowBackground(BlipColors.cardBackground)
 
                         ForEach(filteredSections, id: \.date) { section in
-                            Text(section.date, style: .date)
-                                .font(BlipFonts.sectionHeader)
-                                .foregroundStyle(BlipColors.accentPurple)
-
-                            VStack(spacing: 0) {
+                            Section {
                                 ForEach(section.notifications) { notification in
                                     NotificationRow(notification: notification)
-                                        .contextMenu {
-                                            Button(role: .destructive) {
-                                                withAnimation {
-                                                    viewModel.delete(notification)
-                                                }
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
+                                }
+                                .onDelete { offsets in
+                                    let toDelete = offsets.map { section.notifications[$0] }
+                                    withAnimation {
+                                        for record in toDelete {
+                                            viewModel.delete(record)
                                         }
-                                    if notification.id != section.notifications.last?.id {
-                                        Divider().background(BlipColors.cardBorder)
                                     }
                                 }
+                            } header: {
+                                Text(section.date, style: .date)
+                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(BlipColors.accentPurple)
+                                    .textCase(nil)
                             }
-                            .padding(.horizontal, 16)
-                            .background(BlipColors.cardBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .listRowBackground(BlipColors.cardBackground)
+                            .listRowSeparatorTint(BlipColors.cardBorder)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
                 }
             }
             .navigationTitle("Recent Notifications")

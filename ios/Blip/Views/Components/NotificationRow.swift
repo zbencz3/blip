@@ -4,18 +4,43 @@ struct NotificationRow: View {
     let notification: NotificationRecord
 
     var body: some View {
-        HStack(alignment: .top) {
-            Text(notification.displayText)
-                .font(BlipFonts.body)
-                .foregroundStyle(BlipColors.textPrimary)
-                .lineLimit(3)
+        HStack(alignment: .top, spacing: 12) {
+            // Color accent bar
+            RoundedRectangle(cornerRadius: 2)
+                .fill(BlipColors.accentPurple)
+                .frame(width: 3)
+                .padding(.vertical, 2)
 
-            Spacer()
+            VStack(alignment: .leading, spacing: 4) {
+                if let title = notification.title, !title.isEmpty {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(BlipColors.textPrimary)
+                        .lineLimit(2)
+                }
+
+                if let message = notification.message, !message.isEmpty {
+                    Text(message)
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundStyle(BlipColors.textSecondary)
+                        .lineLimit(3)
+                }
+
+                if let subtitle = notification.subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(BlipColors.textSecondary.opacity(0.7))
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 4)
 
             Text(notification.receivedAt, style: .time)
-                .font(BlipFonts.caption)
-                .foregroundStyle(BlipColors.textSecondary)
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(BlipColors.textSecondary.opacity(0.6))
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
     }
 }
