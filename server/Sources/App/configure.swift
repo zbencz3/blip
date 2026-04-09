@@ -13,6 +13,7 @@ func configure(_ app: Application) async throws {
     app.migrations.add(CreateUser())
     app.migrations.add(CreateDeviceRegistration())
     app.migrations.add(CreatePendingResponse())
+    app.migrations.add(CreateMonitor())
     try await app.autoMigrate()
 
     configureAPNs(app)
@@ -24,6 +25,13 @@ func configure(_ app: Application) async throws {
             try? await PendingResponse.query(on: app.db)
                 .filter(\.$createdAt < cutoff)
                 .delete()
+        }
+    }
+
+    // Monitor checker: runs every 30 seconds
+    app.eventLoopGroup.next().scheduleRepeatedTask(initialDelay: .seconds(30), delay: .seconds(30)) { _ in
+        Task {
+            await MonitorChecker.checkAll(app: app)
         }
     }
 
