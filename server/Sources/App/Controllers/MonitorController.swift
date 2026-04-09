@@ -109,9 +109,9 @@ struct MonitorController: RouteCollection {
         if let interval = input.interval { monitor.interval = interval }
         if let method = input.method, monitor.type == "http" { monitor.method = method }
         if let keyword = input.keyword {
-            monitor.keyword = keyword
+            monitor.keyword = keyword.isEmpty ? nil : keyword
             // Auto-switch HEAD to GET when keyword is set
-            if monitor.method == "HEAD" { monitor.method = "GET" }
+            if !keyword.isEmpty && monitor.method == "HEAD" { monitor.method = "GET" }
         }
         if let keywordShouldExist = input.keywordShouldExist { monitor.keywordShouldExist = keywordShouldExist }
         if let failureThreshold = input.failureThreshold { monitor.failureThreshold = failureThreshold }

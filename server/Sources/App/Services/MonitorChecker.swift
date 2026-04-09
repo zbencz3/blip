@@ -142,24 +142,35 @@ struct MonitorChecker {
 
     static func checkHeartbeat(monitor: Monitor, app: Application) async {
         let previousStatus = monitor.status
-
-        // If no heartbeat ever received, skip (still pending)
-        guard let lastChecked = monitor.lastCheckedAt else { return }
+        let now = Date()
 
         let gracePeriod = monitor.gracePeriod ?? monitor.interval
-        let deadline = lastChecked.addingTimeInterval(Double(monitor.interval + gracePeriod))
+
+        // Never-pinged heartbeat: check if creation + interval + grace has passed
+        let referenceDate: Date
+        if let lastChecked = monitor.lastCheckedAt {
+            referenceDate = lastChecked
+        } else if let created = monitor.createdAt {
+            referenceDate = created
+        } else {
+            return
+        }
+
+        let deadline = referenceDate.addingTimeInterval(Double(monitor.interval + gracePeriod))
 
         // Not overdue yet
-        guard Date() > deadline else { return }
+        guard now > deadline else { return }
 
         // Already marked down, don't re-trigger
         guard monitor.status != "down" else { return }
 
         monitor.consecutiveFailures += 1
+        // Update lastCheckedAt so the next check waits a full interval before re-checking
+        monitor.lastCheckedAt = now
 
         if monitor.consecutiveFailures >= monitor.failureThreshold {
             monitor.status = "down"
-            monitor.lastStatusChange = Date()
+            monitor.lastStatusChange = now
         }
 
         do {

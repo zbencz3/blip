@@ -11,6 +11,7 @@ struct AddMonitorSheet: View {
     @State private var keywordShouldExist = true
     @State private var failureThreshold = 3
     @State private var gracePeriod = 5
+    @State private var isSaving = false
 
     let onCreate: (APIClient.CreateMonitorParams) async -> Void
 
@@ -129,6 +130,8 @@ struct AddMonitorSheet: View {
 
                         // Add button
                         Button {
+                            guard !isSaving else { return }
+                            isSaving = true
                             Task {
                                 let monitorName = name.isEmpty ? (monitorType == "http" ? url : "Heartbeat Monitor") : name
                                 let params = APIClient.CreateMonitorParams(
@@ -143,12 +146,19 @@ struct AddMonitorSheet: View {
                                     gracePeriod: monitorType == "heartbeat" ? gracePeriod * 60 : nil
                                 )
                                 await onCreate(params)
+                                isSaving = false
                                 dismiss()
                             }
                         } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "plus")
-                                Text("Add Monitor")
+                            Group {
+                                if isSaving {
+                                    ProgressView().tint(.black)
+                                } else {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "plus")
+                                        Text("Add Monitor")
+                                    }
+                                }
                             }
                             .font(.system(size: 16, weight: .semibold, design: .monospaced))
                             .foregroundStyle(.black)
@@ -157,7 +167,7 @@ struct AddMonitorSheet: View {
                             .background(isValid ? BlipColors.accentGreen : BlipColors.accentGreen.opacity(0.3))
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
-                        .disabled(!isValid)
+                        .disabled(!isValid || isSaving)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)

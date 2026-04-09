@@ -508,30 +508,32 @@ struct MonitorDetailView: View {
 
     private var detailsCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button {
-                if let url = URL(string: monitor.url) {
-                    #if canImport(UIKit)
-                    UIApplication.shared.open(url)
-                    #endif
+            if !monitor.isHeartbeat {
+                Button {
+                    if let url = URL(string: monitor.url) {
+                        #if canImport(UIKit)
+                        UIApplication.shared.open(url)
+                        #endif
+                    }
+                } label: {
+                    HStack {
+                        Text("URL")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundStyle(BlipColors.textSecondary)
+                        Spacer()
+                        Text(monitor.url)
+                            .font(.system(size: 13, design: .monospaced))
+                            .foregroundStyle(BlipColors.accentPurple)
+                            .lineLimit(1)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10))
+                            .foregroundStyle(BlipColors.accentPurple)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
                 }
-            } label: {
-                HStack {
-                    Text("URL")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundStyle(BlipColors.textSecondary)
-                    Spacer()
-                    Text(monitor.url)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(BlipColors.accentPurple)
-                        .lineLimit(1)
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 10))
-                        .foregroundStyle(BlipColors.accentPurple)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                Divider().background(BlipColors.cardBorder)
             }
-            Divider().background(BlipColors.cardBorder)
             detailRow(label: "TYPE", value: monitor.isHeartbeat ? "Heartbeat" : "HTTP \(monitor.method)")
             Divider().background(BlipColors.cardBorder)
             detailRow(label: monitor.isHeartbeat ? "EXPECTED INTERVAL" : "CHECK INTERVAL", value: "\(monitor.interval / 60) min")

@@ -80,6 +80,12 @@ struct CreateMonitorRequest: Content {
                 throw Abort(.unprocessableEntity, reason: "Failure threshold must be between 1 and 10.")
             }
         }
+
+        if let gracePeriod {
+            guard (0...3600).contains(gracePeriod) else {
+                throw Abort(.unprocessableEntity, reason: "Grace period must be between 0 and 3600 seconds.")
+            }
+        }
     }
 
     /// Resolved method: auto-switch HEAD to GET when keyword is set.
@@ -138,6 +144,11 @@ struct UpdateMonitorRequest: Content {
         if let failureThreshold {
             guard (1...10).contains(failureThreshold) else {
                 throw Abort(.unprocessableEntity, reason: "Failure threshold must be between 1 and 10.")
+            }
+        }
+        if let gracePeriod {
+            guard (0...3600).contains(gracePeriod) else {
+                throw Abort(.unprocessableEntity, reason: "Grace period must be between 0 and 3600 seconds.")
             }
         }
     }

@@ -40,10 +40,17 @@ struct BlipApp: App {
 
                     notificationHandler.onNotificationReceived = { [sharedModelContainer] notification in
                         UserDefaults.standard.set(Date(), forKey: Constants.UserDefaultsKeys.lastPushReceived)
-                        // Save to notification history
+                        // Save to notification history (dedup by request identifier)
                         let content = notification.request.content
+                        let requestID = notification.request.identifier
                         let context = ModelContext(sharedModelContainer)
+                        // Check if already saved (foreground willPresent + didReceive)
+                        let descriptor = FetchDescriptor<NotificationRecord>(
+                            predicate: #Predicate { $0.requestIdentifier == requestID }
+                        )
+                        if let existing = try? context.fetch(descriptor), !existing.isEmpty { return }
                         let record = NotificationRecord(
+                            requestIdentifier: requestID,
                             title: content.title.isEmpty ? nil : content.title,
                             subtitle: content.subtitle.isEmpty ? nil : content.subtitle,
                             message: content.body.isEmpty ? nil : content.body,

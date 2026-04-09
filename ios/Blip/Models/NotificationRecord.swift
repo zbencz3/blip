@@ -8,11 +8,13 @@ final class NotificationRecord {
     var message: String?
     var threadId: String?
     var openURL: String?
+    var requestIdentifier: String?
     @Attribute(.unique) var id: UUID
     var receivedAt: Date
 
     init(
         id: UUID = UUID(),
+        requestIdentifier: String? = nil,
         title: String? = nil,
         subtitle: String? = nil,
         message: String? = nil,
@@ -21,6 +23,7 @@ final class NotificationRecord {
         receivedAt: Date = Date()
     ) {
         self.id = id
+        self.requestIdentifier = requestIdentifier
         self.title = title
         self.subtitle = subtitle
         self.message = message
