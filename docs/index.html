@@ -312,7 +312,11 @@
         <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/secret/rotate</span><span class="desc">Rotate secret</span></div>
         <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/responses/{id}</span><span class="desc">Submit response</span></div>
         <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/responses/{id}</span><span class="desc">Poll response</span></div>
-        <div class="endpoint"><span class="method get">GET</span><span class="path">/status/{secret}</span><span class="desc">Public status page</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="path">/status/{token}</span><span class="desc">Public status page</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/heartbeat/{token}</span><span class="desc">Send heartbeat ping</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/monitors</span><span class="desc">Create monitor (Bearer)</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/monitors</span><span class="desc">List monitors (Bearer)</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/monitors/{id}/stats</span><span class="desc">Monitor stats (Bearer)</span></div>
 
         <h3 style="margin-top: 40px; font-family: var(--mono); font-size: 1rem;">Payload Fields</h3>
         <div class="table-wrap">
@@ -487,6 +491,144 @@
         </div>
     </section>
 
+    <!-- Heartbeat / Dead Man's Switch -->
+    <section class="api" id="heartbeat">
+        <div class="section-label">Heartbeat</div>
+        <h2 class="section-title">Dead Man's Switch</h2>
+        <p class="section-subtitle">Your service pings Bzap. If it stops, you get alerted.</p>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">How It Works</h3>
+        <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 24px;">
+            <p>1. Create a <strong style="color: var(--text);">Heartbeat monitor</strong> in the app — you get a unique ping URL.</p>
+            <p>2. Add a <code style="color: var(--code);">curl</code> call to the end of your script, cron job, or pipeline.</p>
+            <p>3. If the ping stops arriving within the expected interval + grace period, Bzap sends you a push notification.</p>
+            <p>4. Respond from your lock screen — tap <strong style="color: var(--text);">Restart</strong>, <strong style="color: var(--text);">Acknowledge</strong>, or fire a webhook.</p>
+        </div>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Use Cases</h3>
+
+        <h4 style="margin-top: 20px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">Cron Job Monitoring</h4>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">Add a ping at the end of your cron script. If the job fails or hangs, no ping is sent and you get alerted.</p>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">backup.sh</span>
+            </div>
+            <pre><span class="prompt">#!/bin/bash</span>
+<span class="prompt"># Daily database backup</span>
+<span class="cmd">pg_dump mydb > /backups/$(date +%F).sql</span>
+
+<span class="prompt"># Tell Bzap we're alive</span>
+<span class="cmd">curl -s -X POST</span> <span class="url">https://bzap-server.fly.dev/v1/heartbeat/your_token</span>
+</pre>
+        </div>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">CI/CD Pipeline</h4>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">Ping after a successful deploy. If the pipeline breaks silently, you know.</p>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">.github/workflows/deploy.yml</span>
+            </div>
+            <pre><span class="cmd">- name: Deploy</span>
+  <span class="cmd">run: flyctl deploy --remote-only</span>
+
+<span class="cmd">- name: Heartbeat</span>
+  <span class="cmd">run:</span> <span class="cmd">curl -s</span> <span class="url">https://bzap-server.fly.dev/v1/heartbeat/your_token</span>
+</pre>
+        </div>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">Background Worker / Queue Processor</h4>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">Ping after processing each batch. If the worker crashes or gets stuck, silence triggers the alert.</p>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">worker.py</span>
+            </div>
+            <pre><span class="cmd">while True:</span>
+    <span class="cmd">batch = queue.get_batch()</span>
+    <span class="cmd">process(batch)</span>
+
+    <span class="prompt"># Heartbeat after each batch</span>
+    <span class="cmd">requests.post(</span><span class="str">"https://bzap-server.fly.dev/v1/heartbeat/your_token"</span><span class="cmd">)</span>
+</pre>
+        </div>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">IoT / Raspberry Pi</h4>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">A sensor or edge device pings every few minutes. Goes silent = offline.</p>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">sensor.sh (crontab: */5 * * * *)</span>
+            </div>
+            <pre><span class="prompt"># Read sensor + ping Bzap</span>
+<span class="cmd">TEMP=$(cat /sys/class/thermal/thermal_zone0/temp)</span>
+<span class="cmd">curl -s -X POST</span> <span class="url">https://bzap-server.fly.dev/v1/heartbeat/your_token</span>
+</pre>
+        </div>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">AI Agent / Claude Code</h4>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">An autonomous agent pings after each task. If it crashes or gets stuck, you get alerted on your phone.</p>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">agent-loop.sh</span>
+            </div>
+            <pre><span class="cmd">while true; do</span>
+  <span class="cmd">claude --task "$NEXT_TASK"</span>
+  <span class="cmd">curl -s</span> <span class="url">https://bzap-server.fly.dev/v1/heartbeat/your_token</span>
+<span class="cmd">done</span>
+</pre>
+        </div>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Configuration</h3>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Setting</th><th>Description</th><th>Default</th></tr></thead>
+            <tbody>
+                <tr><td><code>interval</code></td><td>How often you expect a ping (1, 5, or 15 min)</td><td>5 min</td></tr>
+                <tr><td><code>grace_period</code></td><td>Extra wait time after interval before alerting</td><td>Same as interval</td></tr>
+                <tr><td><code>failure_threshold</code></td><td>Consecutive misses before marking as down (1-10)</td><td>3</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Keyword Monitoring</h3>
+        <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 16px;">
+            <p>For HTTP monitors, you can also check the response body for a keyword. Set the method to <code style="color: var(--code);">GET</code> and provide a keyword — Bzap will alert if the keyword is missing (or present, if you choose "must NOT contain").</p>
+        </div>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">keyword-monitor.sh</span>
+            </div>
+            <pre><span class="prompt"># Create a monitor that checks for "healthy" in the response</span>
+<span class="prompt">$</span> <span class="cmd">curl -s -X POST</span> <span class="url">https://bzap-server.fly.dev/v1/monitors</span> \
+  <span class="cmd">-H</span> <span class="str">'Authorization: Bearer your_secret'</span> \
+  <span class="cmd">-H</span> <span class="str">'Content-Type: application/json'</span> \
+  <span class="cmd">-d</span> <span class="str">'{
+    "name": "API Health",
+    "url": "https://api.example.com/health",
+    "interval": 60,
+    "method": "GET",
+    "keyword": "healthy",
+    "keyword_should_exist": true
+  }'</span></pre>
+        </div>
+    </section>
+
     <!-- Multi-Device -->
     <section class="api" id="multi-device">
         <div class="section-label">Multi-Device</div>
@@ -544,7 +686,7 @@
 
 <footer>
     <div class="container">
-        <span style="font-family: var(--mono);">bzap</span> by <a href="https://github.com/isylva">iSylva</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="#docs">API</a> &middot; <a href="#multi-device">Multi-Device</a> &middot; <a href="mailto:support@isylva.com">Support</a>
+        <span style="font-family: var(--mono);">bzap</span> by <a href="https://github.com/isylva">iSylva</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="#docs">API</a> &middot; <a href="#heartbeat">Heartbeat</a> &middot; <a href="#multi-device">Multi-Device</a> &middot; <a href="mailto:support@isylva.com">Support</a>
     </div>
 </footer>
 
