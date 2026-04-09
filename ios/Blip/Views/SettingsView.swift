@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var showSubscription = false
     @State private var showAbout = false
     @State private var showTemplates = false
+    @State private var showMonitors = false
 
     var body: some View {
         NavigationStack {
@@ -37,13 +38,22 @@ struct SettingsView: View {
                             }
                         }
 
-                        // Webhooks
+                        // Webhooks & Monitors
                         SettingsSectionCard {
                             Button { showWebhooks = true } label: {
                                 SettingsRow(
                                     icon: "bolt.fill",
                                     iconColor: .blue,
                                     title: "Webhooks",
+                                    showChevron: true
+                                )
+                            }
+                            Divider().background(BlipColors.cardBorder)
+                            Button { showMonitors = true } label: {
+                                SettingsRow(
+                                    icon: "chart.bar.fill",
+                                    iconColor: .green,
+                                    title: "Monitors",
                                     showChevron: true
                                 )
                             }
@@ -165,6 +175,9 @@ struct SettingsView: View {
             }
             .navigationDestination(isPresented: $showTemplates) {
                 TemplatesView(secretManager: secretManager)
+            }
+            .sheet(isPresented: $showMonitors) {
+                MonitorsView(secretManager: secretManager, apiClient: apiClient)
             }
         }
         .preferredColorScheme(.dark)

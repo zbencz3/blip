@@ -144,6 +144,66 @@ struct APIClient {
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(T.self, from: data)
     }
+
+    // MARK: - Monitors
+
+    struct MonitorResponse: Codable, Identifiable {
+        let id: UUID
+        let name: String
+        let url: String
+        let interval: Int
+        let status: String
+        let lastCheckedAt: Date?
+        let lastStatusChange: Date?
+        let consecutiveFailures: Int
+        let createdAt: Date
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, url, interval, status
+            case lastCheckedAt = "last_checked_at"
+            case lastStatusChange = "last_status_change"
+            case consecutiveFailures = "consecutive_failures"
+            case createdAt = "created_at"
+        }
+    }
+
+    func listMonitors(secret: String) async throws -> [MonitorResponse] {
+        var request = makeRequest(path: "monitors", method: "GET")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        return try await perform(request)
+    }
+
+    func createMonitor(secret: String, name: String, url: String, interval: Int) async throws -> MonitorResponse {
+        var request = makeRequest(path: "monitors", method: "POST")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode([
+            "name": name,
+            "url": url,
+            "interval": "\(interval)"
+        ])
+        return try await perform(request)
+    }
+
+    func deleteMonitor(secret: String, monitorId: UUID) async throws {
+        var request = makeRequest(path: "monitors/\(monitorId)", method: "DELETE")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.requestFailed
+        }
+    }
+
+    func updateMonitor(secret: String, monitorId: UUID, name: String, url: String, interval: Int) async throws -> MonitorResponse {
+        var request = makeRequest(path: "monitors/\(monitorId)", method: "PATCH")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode([
+            "name": name,
+            "url": url,
+            "interval": "\(interval)"
+        ])
+        return try await perform(request)
+    }
 }
 
 enum APIError: Error, LocalizedError {

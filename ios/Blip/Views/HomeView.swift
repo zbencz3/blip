@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var showTemplates = false
     @State private var showSubscription = false
     @State private var showUseCases = false
+    @State private var showMonitors = false
 
     var body: some View {
         ZStack {
@@ -169,6 +170,9 @@ struct HomeView: View {
                         Button { showTemplates = true } label: {
                             featurePill(icon: "doc.text", text: "Templates")
                         }
+                        Button { showMonitors = true } label: {
+                            featurePill(icon: "chart.bar.fill", text: "Monitors")
+                        }
                         Button { showUseCases = true } label: {
                             featurePill(icon: "lightbulb.fill", text: "Use Cases")
                         }
@@ -201,6 +205,9 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showUseCases) {
             UseCasesView()
+        }
+        .sheet(isPresented: $showMonitors) {
+            MonitorsView(secretManager: viewModel.secretManager, apiClient: viewModel.apiClient)
         }
         .sheet(isPresented: $showSubscription) {
             NavigationStack {
