@@ -9,6 +9,7 @@ func makeTestApp() async throws -> Application {
     app.databases.use(.sqlite(.memory), as: .sqlite)
     app.migrations.add(CreateUser())
     app.migrations.add(CreateDeviceRegistration())
+    app.migrations.add(CreatePendingResponse())
     try await app.autoMigrate()
     app.apnsServiceCustom = MockAPNsService()
     try routes(app)
@@ -656,6 +657,7 @@ struct RateLimitTests {
         app.databases.use(.sqlite(.memory), as: .sqlite)
         app.migrations.add(CreateUser())
         app.migrations.add(CreateDeviceRegistration())
+        app.migrations.add(CreatePendingResponse())
         try await app.autoMigrate()
         app.apnsServiceCustom = MockAPNsService()
 
@@ -731,6 +733,404 @@ struct RateLimitTests {
             try req.content.encode(["message": "Hello"])
         }, afterResponse: { res async in
             #expect(res.status == .ok)
+        })
+    }
+}
+
+@Suite("Response Channel")
+struct ResponseChannelTests {
+    @Test("Sending with response_channel action creates pending response")
+    func sendWithResponseChannel() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode([
+                "secret": secret,
+                "device_token": "token_rc1",
+                "device_name": "iPhone"
+            ])
+        })
+
+        struct RCPayload: Content {
+            let title: String
+            let message: String
+            let actions: [RCAction]
+            struct RCAction: Content {
+                let id: String
+                let label: String
+                let response_channel: Bool
+            }
+        }
+
+        let payload = RCPayload(
+            title: "Approve?",
+            message: "Deploy to prod",
+            actions: [
+                .init(id: "approve", label: "Approve", response_channel: true),
+                .init(id: "reject", label: "Reject", response_channel: true)
+            ]
+        )
+
+        try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+            try req.content.encode(payload)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let response = try? res.content.decode(NotificationResponse.self)
+            #expect(response?.message == "Notification sent")
+            #expect(response?.responseId != nil)
+        })
+    }
+
+    @Test("Sending without response_channel returns no response_id")
+    func sendWithoutResponseChannel() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode([
+                "secret": secret,
+                "device_token": "token_rc2",
+                "device_name": "iPhone"
+            ])
+        })
+
+        try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+            try req.content.encode(["title": "Test", "message": "Hello"])
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let response = try? res.content.decode(NotificationResponse.self)
+            #expect(response?.responseId == nil)
+        })
+    }
+
+    @Test("Submit response updates pending response")
+    func submitResponse() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        // Create a user and pending response directly
+        let secret = SecretGenerator.generate()
+        let user = User(secret: secret)
+        try await user.save(on: app.db)
+        let pending = PendingResponse(userID: user.id!)
+        try await pending.save(on: app.db)
+        let responseID = pending.id!.uuidString
+
+        try await app.test(.POST, "v1/responses/\(responseID)", beforeRequest: { req async throws in
+            try req.content.encode(ResponseSubmission(
+                actionID: "approve",
+                text: "Looks good",
+                deviceName: "iPhone 15"
+            ))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+        })
+
+        // Verify it was updated
+        let updated = try await PendingResponse.find(pending.id, on: app.db)
+        #expect(updated?.status == "responded")
+        #expect(updated?.actionID == "approve")
+        #expect(updated?.text == "Looks good")
+        #expect(updated?.deviceName == "iPhone 15")
+        #expect(updated?.respondedAt != nil)
+    }
+
+    @Test("Submit to already responded returns conflict")
+    func submitAlreadyResponded() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+        let pending = PendingResponse(userID: user.id!)
+        pending.status = "responded"
+        pending.respondedAt = Date()
+        try await pending.save(on: app.db)
+
+        try await app.test(.POST, "v1/responses/\(pending.id!.uuidString)", beforeRequest: { req async throws in
+            try req.content.encode(ResponseSubmission(actionID: "approve", text: nil, deviceName: nil))
+        }, afterResponse: { res async in
+            #expect(res.status == .conflict)
+        })
+    }
+
+    @Test("Poll pending response returns 202")
+    func pollPending() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        let user = User(secret: secret)
+        try await user.save(on: app.db)
+        let pending = PendingResponse(userID: user.id!)
+        try await pending.save(on: app.db)
+
+        try await app.test(.GET, "v1/responses/\(pending.id!.uuidString)", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .accepted)
+            let poll = try? res.content.decode(PollResponse.self)
+            #expect(poll?.status == "pending")
+        })
+    }
+
+    @Test("Poll responded returns 200 and deletes row")
+    func pollResponded() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        let user = User(secret: secret)
+        try await user.save(on: app.db)
+        let pending = PendingResponse(userID: user.id!)
+        pending.status = "responded"
+        pending.actionID = "approve"
+        pending.text = "LGTM"
+        pending.deviceName = "iPad"
+        pending.respondedAt = Date()
+        try await pending.save(on: app.db)
+        let responseID = pending.id!
+
+        try await app.test(.GET, "v1/responses/\(responseID.uuidString)", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let poll = try? res.content.decode(PollResponse.self)
+            #expect(poll?.status == "responded")
+            #expect(poll?.actionID == "approve")
+            #expect(poll?.text == "LGTM")
+            #expect(poll?.deviceName == "iPad")
+        })
+
+        // Row should be deleted after poll
+        let found = try await PendingResponse.find(responseID, on: app.db)
+        #expect(found == nil)
+    }
+
+    @Test("Poll requires auth")
+    func pollRequiresAuth() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+        let pending = PendingResponse(userID: user.id!)
+        try await pending.save(on: app.db)
+
+        try await app.test(.GET, "v1/responses/\(pending.id!.uuidString)", afterResponse: { res async in
+            #expect(res.status == .unauthorized)
+        })
+    }
+
+    @Test("Poll with wrong user returns 404")
+    func pollWrongUser() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret1 = SecretGenerator.generate()
+        let user1 = User(secret: secret1)
+        try await user1.save(on: app.db)
+
+        let secret2 = SecretGenerator.generate()
+        let user2 = User(secret: secret2)
+        try await user2.save(on: app.db)
+
+        let pending = PendingResponse(userID: user1.id!)
+        try await pending.save(on: app.db)
+
+        // user2 tries to poll user1's response
+        try await app.test(.GET, "v1/responses/\(pending.id!.uuidString)", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret2)
+        }, afterResponse: { res async in
+            #expect(res.status == .notFound)
+        })
+    }
+
+    @Test("TTL cleanup deletes old pending responses")
+    func ttlCleanup() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+
+        // Create an old pending response (6 minutes ago)
+        let old = PendingResponse(userID: user.id!)
+        try await old.save(on: app.db)
+        // Manually set created_at to 6 minutes ago
+        old.createdAt = Date().addingTimeInterval(-360)
+        try await old.save(on: app.db)
+
+        // Create a recent one
+        let recent = PendingResponse(userID: user.id!)
+        try await recent.save(on: app.db)
+
+        // Run TTL cleanup manually
+        let cutoff = Date().addingTimeInterval(-300)
+        try await PendingResponse.query(on: app.db)
+            .filter(\.$createdAt < cutoff)
+            .delete()
+
+        // Old should be gone, recent should remain
+        let oldFound = try await PendingResponse.find(old.id, on: app.db)
+        #expect(oldFound == nil)
+
+        let recentFound = try await PendingResponse.find(recent.id, on: app.db)
+        #expect(recentFound != nil)
+    }
+
+    @Test("Submit to nonexistent response returns 404")
+    func submitNotFound() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let fakeID = UUID().uuidString
+        try await app.test(.POST, "v1/responses/\(fakeID)", beforeRequest: { req async throws in
+            try req.content.encode(ResponseSubmission(actionID: "test", text: nil, deviceName: nil))
+        }, afterResponse: { res async in
+            #expect(res.status == .notFound)
+        })
+    }
+
+    @Test("Full flow: send → poll pending → submit → poll responded → deleted")
+    func fullFlow() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode([
+                "secret": secret,
+                "device_token": "token_flow",
+                "device_name": "iPhone"
+            ])
+        })
+
+        struct RCPayload: Content {
+            let message: String
+            let actions: [RCAction]
+            struct RCAction: Content {
+                let id: String
+                let label: String
+                let response_channel: Bool
+            }
+        }
+
+        var responseID: String?
+
+        // 1. Send notification with response channel
+        try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+            try req.content.encode(RCPayload(
+                message: "Deploy?",
+                actions: [.init(id: "yes", label: "Yes", response_channel: true)]
+            ))
+        }, afterResponse: { res async in
+            let response = try? res.content.decode(NotificationResponse.self)
+            responseID = response?.responseId
+            #expect(responseID != nil)
+        })
+
+        // 2. Poll — should be pending
+        try await app.test(.GET, "v1/responses/\(responseID!)", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .accepted)
+            let poll = try? res.content.decode(PollResponse.self)
+            #expect(poll?.status == "pending")
+        })
+
+        // 3. Submit response
+        try await app.test(.POST, "v1/responses/\(responseID!)", beforeRequest: { req async throws in
+            try req.content.encode(ResponseSubmission(actionID: "yes", text: nil, deviceName: "iPhone"))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+        })
+
+        // 4. Poll — should be responded and then deleted
+        try await app.test(.GET, "v1/responses/\(responseID!)", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let poll = try? res.content.decode(PollResponse.self)
+            #expect(poll?.status == "responded")
+            #expect(poll?.actionID == "yes")
+        })
+
+        // 5. Poll again — should be 404 (deleted)
+        try await app.test(.GET, "v1/responses/\(responseID!)", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .notFound)
+        })
+    }
+
+    @Test("Submit response with text input")
+    func submitWithTextInput() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await app.test(.POST, "v1/devices/register", beforeRequest: { req async throws in
+            try req.content.encode(["secret": secret, "device_token": "token_text", "device_name": "iPhone"])
+        })
+
+        struct RCPayload: Content {
+            let message: String
+            let actions: [RCAction]
+            struct RCAction: Content {
+                let id: String
+                let label: String
+                let response_channel: Bool
+                let type: String?
+                let text_input_placeholder: String?
+            }
+        }
+
+        var responseID: String?
+
+        // Send notification with text input action
+        try await app.test(.POST, "v1/\(secret)", beforeRequest: { req async throws in
+            try req.content.encode(RCPayload(
+                message: "What branch?",
+                actions: [.init(id: "reply", label: "Reply", response_channel: true, type: "text_input", text_input_placeholder: "Branch name...")]
+            ))
+        }, afterResponse: { res async in
+            let response = try? res.content.decode(NotificationResponse.self)
+            responseID = response?.responseId
+            #expect(responseID != nil)
+        })
+
+        // Submit with text
+        try await app.test(.POST, "v1/responses/\(responseID!)", beforeRequest: { req async throws in
+            try req.content.encode(ResponseSubmission(actionID: "reply", text: "feature/response-channel", deviceName: "iPhone"))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+        })
+
+        // Poll — should have text
+        try await app.test(.GET, "v1/responses/\(responseID!)", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let poll = try? res.content.decode(PollResponse.self)
+            #expect(poll?.status == "responded")
+            #expect(poll?.actionID == "reply")
+            #expect(poll?.text == "feature/response-channel")
+            #expect(poll?.deviceName == "iPhone")
+        })
+    }
+
+    @Test("Poll without auth returns unauthorized")
+    func pollNoAuth() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let fakeID = UUID().uuidString
+        try await app.test(.GET, "v1/responses/\(fakeID)", afterResponse: { res async in
+            #expect(res.status == .unauthorized)
         })
     }
 }

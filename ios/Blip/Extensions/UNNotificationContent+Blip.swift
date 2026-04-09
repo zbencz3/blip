@@ -26,7 +26,10 @@ extension UNNotificationContent {
                 id: id,
                 label: label,
                 webhook: dict["webhook"] as? String,
-                destructive: dict["destructive"] as? Bool
+                destructive: dict["destructive"] as? Bool,
+                responseChannel: dict["response_channel"] as? Bool,
+                type: dict["type"] as? String,
+                textInputPlaceholder: dict["text_input_placeholder"] as? String
             )
         }
         return actions.isEmpty ? nil : actions

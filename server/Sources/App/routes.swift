@@ -15,6 +15,11 @@ func routes(_ app: Application) throws {
     try app.register(collection: DeviceController())
     try app.register(collection: SecretController())
 
+    // Response submit: not rate-limited (called once per notification tap)
+    try app.register(collection: ResponseSubmitController())
+
     let rateLimited = app.grouped(RateLimitMiddleware(store: rateLimitStore))
     try rateLimited.register(collection: NotificationController(apnsService: app.apnsServiceCustom))
+    // Response poll: rate-limited
+    try rateLimited.register(collection: ResponsePollController())
 }

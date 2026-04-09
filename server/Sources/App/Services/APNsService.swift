@@ -29,7 +29,13 @@ struct LiveAPNsService: APNsServiceProtocol {
             let actionIds = actions.map(\.id).sorted().joined(separator: "_")
             let hash = actionIds.djb2Hash
             category = "BZAP_DYN_\(hash)"
-            blipActions = actions.map { BlipAction(id: $0.id, label: $0.label, webhook: $0.webhook, destructive: $0.destructive) }
+            blipActions = actions.map {
+                BlipAction(
+                    id: $0.id, label: $0.label, webhook: $0.webhook,
+                    destructive: $0.destructive, responseChannel: $0.responseChannel,
+                    type: $0.type, textInputPlaceholder: $0.textInputPlaceholder
+                )
+            }
         } else {
             category = payload.openUrl != nil ? "BZAP_WITH_URL" : "BZAP_GENERAL"
             blipActions = nil
@@ -48,7 +54,9 @@ struct LiveAPNsService: APNsServiceProtocol {
                 openUrl: payload.openUrl,
                 imageUrl: payload.imageUrl,
                 filterCriteria: payload.filterCriteria,
-                actions: blipActions
+                actions: blipActions,
+                responseID: payload.responseID,
+                responseURL: payload.responseURL
             ),
             sound: sound,
             threadID: payload.threadId,
@@ -77,12 +85,16 @@ struct BlipPayload: Codable, Sendable {
     let imageUrl: String?
     let filterCriteria: String?
     let actions: [BlipAction]?
+    let responseID: String?
+    let responseURL: String?
 
     enum CodingKeys: String, CodingKey {
         case openUrl = "open_url"
         case imageUrl = "image_url"
         case filterCriteria = "filter_criteria"
         case actions
+        case responseID = "response_id"
+        case responseURL = "response_url"
     }
 }
 
@@ -91,6 +103,15 @@ struct BlipAction: Codable, Sendable {
     let label: String
     let webhook: String?
     let destructive: Bool?
+    let responseChannel: Bool?
+    let type: String?
+    let textInputPlaceholder: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, label, webhook, destructive, type
+        case responseChannel = "response_channel"
+        case textInputPlaceholder = "text_input_placeholder"
+    }
 }
 
 extension String {

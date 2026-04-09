@@ -37,11 +37,24 @@ enum NotificationCategories {
 
     static func registerDynamic(actions: [NotificationAction], categoryId: String) {
         let center = UNUserNotificationCenter.current()
-        let newActions = actions.map { action in
-            UNNotificationAction(
+        let newActions: [UNNotificationAction] = actions.map { action in
+            let isDestructive = action.destructive == true
+
+            if action.type == "text_input" {
+                let placeholder = action.textInputPlaceholder ?? "Type your response..."
+                return UNTextInputNotificationAction(
+                    identifier: action.id,
+                    title: action.label,
+                    options: isDestructive ? [.destructive] : [],
+                    textInputButtonTitle: "Send",
+                    textInputPlaceholder: placeholder
+                )
+            }
+
+            return UNNotificationAction(
                 identifier: action.id,
                 title: action.label,
-                options: action.destructive == true ? [.destructive] : []
+                options: isDestructive ? [.destructive] : []
             )
         }
         let category = UNNotificationCategory(
