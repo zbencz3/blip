@@ -16,6 +16,7 @@ struct MonitorController: RouteCollection {
         monitors.get(":monitorID", "incidents", use: incidents)
         monitors.get(":monitorID", "checks", use: checks)
         monitors.post(":monitorID", "pause", use: pause)
+        monitors.get(":monitorID", "uptime-bars", use: uptimeBars)
         routes.grouped("v1").get("status-token", use: statusToken)
     }
 
@@ -227,6 +228,50 @@ struct MonitorController: RouteCollection {
 
         try await monitor.save(on: req.db)
         return try MonitorResponse(from: monitor)
+    }
+
+    @Sendable
+    func uptimeBars(req: Request) async throws -> [UptimeBarResponse] {
+        let monitor = try await requireMonitor(from: req)
+        guard let monitorID = monitor.id else {
+            throw Abort(.internalServerError, reason: "Monitor ID missing.")
+        }
+
+        let now = Date()
+        let calendar = Calendar.current
+        let ninetyDaysAgo = now.addingTimeInterval(-90 * 86400)
+
+        let checks = try await MonitorCheck.query(on: req.db)
+            .filter(\.$monitor.$id == monitorID)
+            .filter(\.$checkedAt >= ninetyDaysAgo)
+            .all()
+
+        // Group by day
+        var dayBuckets: [String: (up: Int, total: Int)] = [:]
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "yyyy-MM-dd"
+        dayFormatter.timeZone = TimeZone(identifier: "UTC")
+
+        for check in checks {
+            guard let date = check.checkedAt else { continue }
+            let key = dayFormatter.string(from: date)
+            var bucket = dayBuckets[key] ?? (up: 0, total: 0)
+            bucket.total += 1
+            if check.status == "up" { bucket.up += 1 }
+            dayBuckets[key] = bucket
+        }
+
+        // Build 90 days of bars
+        var bars: [UptimeBarResponse] = []
+        for daysAgo in (0..<90).reversed() {
+            let date = calendar.date(byAdding: .day, value: -daysAgo, to: now)!
+            let key = dayFormatter.string(from: date)
+            let bucket = dayBuckets[key]
+            let uptime: Double? = bucket.map { Double($0.up) / Double(max($0.total, 1)) * 100.0 }
+            bars.append(UptimeBarResponse(date: key, uptime: uptime, checks: bucket?.total ?? 0))
+        }
+
+        return bars
     }
 
     @Sendable

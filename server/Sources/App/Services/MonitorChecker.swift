@@ -196,14 +196,84 @@ struct MonitorChecker {
             }
         }
 
-        // Send notification if just went down
+        // Send notification with action buttons if just went down
         if monitor.status == "down" && previousStatus != "down" {
-            await sendNotification(
+            await sendHeartbeatAlert(
                 title: "\u{1F534} \(monitor.name) missed heartbeat",
                 body: "No heartbeat received within the expected interval.",
                 monitor: monitor,
                 app: app
             )
+        }
+    }
+
+    private static func sendHeartbeatAlert(
+        title: String,
+        body: String,
+        monitor: Monitor,
+        app: Application
+    ) async {
+        do {
+            let userID = monitor.$user.id
+            let devices = try await DeviceRegistration.query(on: app.db)
+                .filter(\.$user.$id == userID)
+                .all()
+
+            guard !devices.isEmpty else { return }
+
+            // Create response channel for the action buttons
+            let pendingResponse = PendingResponse(userID: userID, status: "pending")
+            try await pendingResponse.save(on: app.db)
+            let responseID = pendingResponse.id?.uuidString
+            let baseURL = Environment.get("BASE_URL") ?? "https://bzap-server.fly.dev"
+            let responseURL = responseID.map { "\(baseURL)/v1/responses/\($0)" }
+
+            let actions: [NotificationAction] = [
+                NotificationAction(
+                    id: "acknowledge",
+                    label: "Acknowledge",
+                    webhook: nil,
+                    destructive: nil,
+                    responseChannel: true,
+                    type: nil,
+                    textInputPlaceholder: nil
+                ),
+                NotificationAction(
+                    id: "snooze",
+                    label: "Snooze 1h",
+                    webhook: nil,
+                    destructive: nil,
+                    responseChannel: true,
+                    type: nil,
+                    textInputPlaceholder: nil
+                )
+            ]
+
+            let payload = NotificationPayload(
+                title: title,
+                subtitle: nil,
+                body: body,
+                threadId: "monitor-\(monitor.id?.uuidString ?? "")",
+                sound: "default",
+                openUrl: nil,
+                imageUrl: nil,
+                expirationDate: nil,
+                interruptionLevel: "time-sensitive",
+                filterCriteria: nil,
+                actions: actions,
+                responseID: responseID,
+                responseURL: responseURL
+            )
+
+            for device in devices {
+                do {
+                    try await app.apnsServiceCustom.send(payload, to: device.deviceToken)
+                } catch {
+                    app.logger.warning("Failed to send heartbeat alert to \(device.deviceToken): \(error)")
+                }
+            }
+        } catch {
+            app.logger.error("Failed to send heartbeat alert: \(error)")
         }
     }
 

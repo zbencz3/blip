@@ -18,6 +18,7 @@ struct MonitorDetailView: View {
     @State private var showCopied = false
     @State private var showSent = false
     @State private var statusToken: String?
+    @State private var uptimeBars: [APIClient.UptimeBarResponse] = []
 
     private var statusPageURL: String? {
         guard let token = statusToken else { return nil }
@@ -33,6 +34,7 @@ struct MonitorDetailView: View {
                     VStack(spacing: 16) {
                         statusHeader
                         uptimeCard
+                        if !uptimeBars.isEmpty { uptimeBarsChart }
                         if monitor.isHeartbeat { heartbeatPingCard }
                         if !monitor.isHeartbeat && !checks.isEmpty { responseTimeChart }
                         if !monitor.isHeartbeat { responseTimeCard }
@@ -251,6 +253,56 @@ struct MonitorDetailView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(BlipColors.cardBorder, lineWidth: 0.5)
         )
+    }
+
+    // MARK: - Uptime Bars (90 days)
+
+    private var uptimeBarsChart: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("UPTIME — 90 DAYS")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundStyle(BlipColors.textSecondary)
+                Spacer()
+                let avg = uptimeBars.compactMap(\.uptime).reduce(0, +) / max(Double(uptimeBars.compactMap(\.uptime).count), 1)
+                Text(String(format: "%.1f%%", avg))
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundStyle(avg >= 99 ? .green : avg >= 95 ? .orange : .red)
+            }
+
+            HStack(spacing: 1) {
+                ForEach(Array(uptimeBars.enumerated()), id: \.offset) { _, bar in
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(barColor(for: bar.uptime))
+                        .frame(height: 28)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+            HStack {
+                Text("90d ago")
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(BlipColors.textSecondary.opacity(0.5))
+                Spacer()
+                Text("today")
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(BlipColors.textSecondary.opacity(0.5))
+            }
+        }
+        .padding(16)
+        .background(BlipColors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(BlipColors.cardBorder, lineWidth: 0.5)
+        )
+    }
+
+    private func barColor(for uptime: Double?) -> Color {
+        guard let uptime else { return BlipColors.cardBorder }
+        if uptime >= 99 { return .green }
+        if uptime >= 95 { return .orange }
+        return .red
     }
 
     // MARK: - Heartbeat Ping Card
@@ -654,6 +706,7 @@ struct MonitorDetailView: View {
         checks = (try? await checksTask) ?? []
         incidents = (try? await incidentsTask) ?? []
         statusToken = try? await apiClient.statusToken(secret: secretManager.currentSecret)
+        uptimeBars = (try? await apiClient.uptimeBars(secret: secretManager.currentSecret, monitorId: monitor.id)) ?? []
         isLoading = false
     }
 }

@@ -363,6 +363,20 @@ struct APIClient {
         return try await perform(request)
     }
 
+    // MARK: - Uptime Bars
+
+    struct UptimeBarResponse: Codable {
+        let date: String
+        let uptime: Double?
+        let checks: Int
+    }
+
+    func uptimeBars(secret: String, monitorId: UUID) async throws -> [UptimeBarResponse] {
+        var request = makeRequest(path: "monitors/\(monitorId)/uptime-bars", method: "GET")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        return try await perform(request)
+    }
+
     // MARK: - Status Token
 
     func statusToken(secret: String) async throws -> String {

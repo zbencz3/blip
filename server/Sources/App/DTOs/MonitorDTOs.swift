@@ -289,3 +289,9 @@ struct MonitorCheckResponse: Content {
 struct PauseMonitorRequest: Content {
     let paused: Bool
 }
+
+struct UptimeBarResponse: Content {
+    let date: String
+    let uptime: Double?
+    let checks: Int
+}
