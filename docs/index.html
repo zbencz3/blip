@@ -493,15 +493,9 @@
         <h2 class="section-title">Use Bzap on Multiple Devices</h2>
         <p class="section-subtitle">iPhone + iPad. Same account, same notifications.</p>
 
-        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Automatic Sync (iCloud Keychain)</h3>
-        <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 24px;">
-            <p>Bzap automatically syncs your account secret via iCloud Keychain. If you install Bzap on a second device signed into the <strong style="color: var(--text);">same Apple ID</strong>, it should pick up your account automatically.</p>
-            <p style="margin-top: 8px;"><strong style="color: var(--text);">Note:</strong> iCloud Keychain sync is not instant — it can take anywhere from a few seconds to several minutes depending on network conditions and iCloud sync status. If your second device generates a new account instead of finding your existing one, use the Link Device flow below.</p>
-        </div>
-
-        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Link Device (QR Code)</h3>
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Recommended: Link Device (QR Code)</h3>
         <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 16px;">
-            <p>If iCloud sync hasn't kicked in yet, or your devices use different Apple IDs, you can link manually:</p>
+            <p>The most reliable way to set up a second device is the <strong style="color: var(--text);">QR code flow</strong>. It works instantly, across any Apple ID, with no waiting:</p>
         </div>
         <div style="color: var(--muted); font-size: 0.85rem; line-height: 2; margin-bottom: 24px;">
             <p><strong style="color: var(--green);">On your existing device</strong> (the one that already has your account):</p>
@@ -509,6 +503,13 @@
             <p style="margin-top: 12px;"><strong style="color: var(--green);">On your new device:</strong></p>
             <p style="margin-left: 16px;">Settings → Link Device → <strong style="color: var(--text);">Scan QR Code</strong></p>
             <p style="margin-top: 12px;">The new device imports your account secret and registers itself with the server. Both devices will receive notifications from all your webhooks.</p>
+        </div>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">iCloud Keychain Sync</h3>
+        <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 16px;">
+            <p>Bzap also syncs your account secret via iCloud Keychain in the background. If both devices share the <strong style="color: var(--text);">same Apple ID</strong> with Passwords &amp; Keychain enabled, the secret will eventually sync automatically.</p>
+            <p style="margin-top: 8px;"><strong style="color: var(--text);">However, this sync is not instant</strong> — it can take seconds to minutes depending on network conditions. If the new device launches before the sync completes, it will generate a new (separate) account. That's why <strong style="color: var(--text);">QR linking is the recommended approach</strong> for the initial setup.</p>
+            <p style="margin-top: 8px;">Once both devices share the same secret (via QR or sync), future changes like secret rotation will sync automatically via iCloud Keychain.</p>
         </div>
 
         <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">How It Works</h3>
@@ -522,9 +523,9 @@
         <table>
             <thead><tr><th>Issue</th><th>Solution</th></tr></thead>
             <tbody>
-                <tr><td>New device doesn't see my monitors</td><td>Use Link Device → Scan QR from your existing device</td></tr>
-                <tr><td>iCloud sync didn't work</td><td>Check Settings → Apple ID → iCloud → Passwords & Keychain is enabled on both devices</td></tr>
-                <tr><td>Different Apple IDs on devices</td><td>Use the QR code flow — it works across any Apple ID</td></tr>
+                <tr><td>New device doesn't see my monitors</td><td>Use Link Device → Scan QR from your existing device. This is the fastest and most reliable method.</td></tr>
+                <tr><td>iCloud sync didn't work</td><td>iCloud Keychain sync can be slow. Don't wait — use the QR code flow instead. Check Settings → Apple ID → iCloud → Passwords & Keychain is on for future syncs.</td></tr>
+                <tr><td>Different Apple IDs on devices</td><td>QR code flow works across any Apple ID — no iCloud needed</td></tr>
                 <tr><td>Subscription not showing on second device</td><td>Tap Restore Subscription on the Subscription page</td></tr>
                 <tr><td>Notifications only on one device</td><td>Make sure push notifications are enabled in system settings on both devices</td></tr>
             </tbody>
