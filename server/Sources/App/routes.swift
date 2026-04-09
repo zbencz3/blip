@@ -24,4 +24,7 @@ func routes(_ app: Application) throws {
     try rateLimited.register(collection: ResponsePollController())
 
     try rateLimited.register(collection: MonitorController())
+
+    // Public status page (no auth, no rate limit)
+    try app.register(collection: StatusPageController())
 }

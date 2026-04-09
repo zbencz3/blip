@@ -9,7 +9,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     GENERATE_INFOPLIST_FILE: YES
-    CURRENT_PROJECT_VERSION: 26040943
+    CURRENT_PROJECT_VERSION: 26040956
     MARKETING_VERSION: "1.0.0"
 
 targets:
@@ -34,6 +34,7 @@ targets:
         PRODUCT_NAME: Bzap
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_NSCameraUsageDescription: "Bzap uses the camera to scan QR codes for linking devices."
     plist:
       NSAppTransportSecurity:
         NSAllowsLocalNetworking: true

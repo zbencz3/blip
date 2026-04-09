@@ -36,8 +36,22 @@ struct DeviceController: RouteCollection {
             existing.deviceName = input.deviceName
             existing.$user.id = userID
             try await existing.save(on: req.db)
+
+            // Clean up stale registrations: same user + same device name but different token
+            try await DeviceRegistration.query(on: req.db)
+                .filter(\.$user.$id == userID)
+                .filter(\.$deviceName == input.deviceName)
+                .filter(\.$deviceToken != input.deviceToken)
+                .delete()
+
             return try DeviceResponse(from: existing)
         }
+
+        // Clean up stale registrations before creating new one
+        try await DeviceRegistration.query(on: req.db)
+            .filter(\.$user.$id == userID)
+            .filter(\.$deviceName == input.deviceName)
+            .delete()
 
         let device = DeviceRegistration(
             userID: userID,

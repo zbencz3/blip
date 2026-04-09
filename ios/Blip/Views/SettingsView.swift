@@ -17,6 +17,7 @@ struct SettingsView: View {
     @State private var showAbout = false
     @State private var showTemplates = false
     @State private var showMonitors = false
+    @State private var showLinkDevice = false
 
     var body: some View {
         NavigationStack {
@@ -54,6 +55,19 @@ struct SettingsView: View {
                                     icon: "chart.bar.fill",
                                     iconColor: .green,
                                     title: "Monitors",
+                                    showChevron: true
+                                )
+                            }
+                        }
+
+                        // Link Device
+                        SettingsSectionCard {
+                            Button { showLinkDevice = true } label: {
+                                SettingsRow(
+                                    icon: "link.circle.fill",
+                                    iconColor: BlipColors.accentPurple,
+                                    title: "Link Device",
+                                    subtitle: "Use Bzap on iPhone + iPad",
                                     showChevron: true
                                 )
                             }
@@ -178,6 +192,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showMonitors) {
                 MonitorsView(secretManager: secretManager, apiClient: apiClient)
+            }
+            .sheet(isPresented: $showLinkDevice) {
+                LinkDeviceView(secretManager: secretManager, apiClient: apiClient)
             }
         }
         .preferredColorScheme(.dark)

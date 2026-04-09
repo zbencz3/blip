@@ -14,6 +14,7 @@ func configure(_ app: Application) async throws {
     app.migrations.add(CreateDeviceRegistration())
     app.migrations.add(CreatePendingResponse())
     app.migrations.add(CreateMonitor())
+    app.migrations.add(CreateMonitorCheck())
     try await app.autoMigrate()
 
     configureAPNs(app)
@@ -24,6 +25,16 @@ func configure(_ app: Application) async throws {
             let cutoff = Date().addingTimeInterval(-300)
             try? await PendingResponse.query(on: app.db)
                 .filter(\.$createdAt < cutoff)
+                .delete()
+        }
+    }
+
+    // Cleanup old monitor checks: keep 30 days
+    app.eventLoopGroup.next().scheduleRepeatedTask(initialDelay: .seconds(120), delay: .seconds(3600)) { _ in
+        Task {
+            let cutoff = Date().addingTimeInterval(-30 * 86400)
+            try? await MonitorCheck.query(on: app.db)
+                .filter(\.$checkedAt < cutoff)
                 .delete()
         }
     }

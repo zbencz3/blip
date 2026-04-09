@@ -12,6 +12,10 @@ struct MonitorController: RouteCollection {
         monitors.get(":monitorID", use: get)
         monitors.delete(":monitorID", use: delete)
         monitors.patch(":monitorID", use: update)
+        monitors.get(":monitorID", "stats", use: stats)
+        monitors.get(":monitorID", "incidents", use: incidents)
+        monitors.get(":monitorID", "checks", use: checks)
+        monitors.post(":monitorID", "pause", use: pause)
     }
 
     @Sendable
@@ -85,6 +89,114 @@ struct MonitorController: RouteCollection {
             monitor.lastStatusChange = nil
         }
         if let interval = input.interval { monitor.interval = interval }
+
+        try await monitor.save(on: req.db)
+        return try MonitorResponse(from: monitor)
+    }
+
+    @Sendable
+    func stats(req: Request) async throws -> MonitorStatsResponse {
+        let monitor = try await requireMonitor(from: req)
+        guard let monitorID = monitor.id else {
+            throw Abort(.internalServerError, reason: "Monitor ID missing.")
+        }
+
+        let now = Date()
+        let sevenDaysAgo = now.addingTimeInterval(-7 * 86400)
+        let thirtyDaysAgo = now.addingTimeInterval(-30 * 86400)
+
+        let allChecks = try await MonitorCheck.query(on: req.db)
+            .filter(\.$monitor.$id == monitorID)
+            .filter(\.$checkedAt >= thirtyDaysAgo)
+            .sort(\.$checkedAt, .descending)
+            .all()
+
+        let checks7d = allChecks.filter { ($0.checkedAt ?? .distantPast) >= sevenDaysAgo }
+
+        let uptime7d: Double? = checks7d.isEmpty ? nil : {
+            let upCount = checks7d.filter { $0.status == "up" }.count
+            return (Double(upCount) / Double(checks7d.count)) * 100.0
+        }()
+
+        let uptime30d: Double? = allChecks.isEmpty ? nil : {
+            let upCount = allChecks.filter { $0.status == "up" }.count
+            return (Double(upCount) / Double(allChecks.count)) * 100.0
+        }()
+
+        let responseTimes = allChecks.filter { $0.status == "up" }.map(\.responseTimeMs)
+
+        return MonitorStatsResponse(
+            uptime7d: uptime7d.map { ($0 * 100).rounded() / 100 },
+            uptime30d: uptime30d.map { ($0 * 100).rounded() / 100 },
+            avgResponseMs: responseTimes.isEmpty ? nil : responseTimes.reduce(0, +) / responseTimes.count,
+            minResponseMs: responseTimes.min(),
+            maxResponseMs: responseTimes.max(),
+            totalChecks: allChecks.count
+        )
+    }
+
+    @Sendable
+    func incidents(req: Request) async throws -> [MonitorIncidentResponse] {
+        let monitor = try await requireMonitor(from: req)
+        guard let monitorID = monitor.id else {
+            throw Abort(.internalServerError, reason: "Monitor ID missing.")
+        }
+
+        // Return checks where status is "down" (incidents), last 50
+        let downChecks = try await MonitorCheck.query(on: req.db)
+            .filter(\.$monitor.$id == monitorID)
+            .filter(\.$status == "down")
+            .sort(\.$checkedAt, .descending)
+            .range(..<50)
+            .all()
+
+        return downChecks.compactMap { check in
+            guard let id = check.id else { return nil }
+            return MonitorIncidentResponse(
+                id: id,
+                status: check.status,
+                checkedAt: check.checkedAt,
+                responseTimeMs: check.responseTimeMs,
+                error: check.error
+            )
+        }
+    }
+
+    @Sendable
+    func checks(req: Request) async throws -> [MonitorCheckResponse] {
+        let monitor = try await requireMonitor(from: req)
+        guard let monitorID = monitor.id else {
+            throw Abort(.internalServerError, reason: "Monitor ID missing.")
+        }
+
+        // Last 100 checks for chart data
+        let recentChecks = try await MonitorCheck.query(on: req.db)
+            .filter(\.$monitor.$id == monitorID)
+            .sort(\.$checkedAt, .descending)
+            .range(..<100)
+            .all()
+
+        return recentChecks.reversed().map { check in
+            MonitorCheckResponse(
+                responseTimeMs: check.responseTimeMs,
+                status: check.status,
+                checkedAt: check.checkedAt
+            )
+        }
+    }
+
+    @Sendable
+    func pause(req: Request) async throws -> MonitorResponse {
+        let monitor = try await requireMonitor(from: req)
+        let input = try req.content.decode(PauseMonitorRequest.self)
+
+        if input.paused {
+            monitor.status = "paused"
+        } else {
+            monitor.status = "pending"
+            monitor.consecutiveFailures = 0
+            monitor.lastCheckedAt = nil
+        }
 
         try await monitor.save(on: req.db)
         return try MonitorResponse(from: monitor)

@@ -45,12 +45,23 @@ struct MonitorsView: View {
                 AddMonitorSheet { name, url, interval in
                     await viewModel.create(name: name, url: url, interval: interval)
                 }
+                .presentationBackground(BlipColors.background)
             }
-            .sheet(item: $selectedMonitor) { monitor in
-                MonitorDetailView(monitor: monitor) {
+            .sheet(item: $selectedMonitor, onDismiss: {
+                Task { await viewModel.refresh() }
+            }) { monitor in
+                MonitorDetailView(
+                    monitor: monitor,
+                    secretManager: viewModel.secretManager,
+                    apiClient: viewModel.apiClient
+                ) {
                     await viewModel.delete(monitor)
                     selectedMonitor = nil
+                } onPauseToggle: {
+                    await viewModel.togglePause(monitor)
+                    selectedMonitor = nil
                 }
+                .presentationBackground(BlipColors.background)
             }
         }
         .preferredColorScheme(.dark)
@@ -89,22 +100,67 @@ struct MonitorsView: View {
     private var monitorsList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
+                // Dashboard summary
+                if !viewModel.monitors.isEmpty {
+                    dashboardSummary
+                }
+
                 ForEach(viewModel.monitors) { monitor in
-                    Button { selectedMonitor = monitor } label: {
-                        MonitorCard(monitor: monitor)
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            Task { await viewModel.delete(monitor) }
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                    MonitorCard(monitor: monitor)
+                        .onTapGesture { selectedMonitor = monitor }
+                        .contextMenu {
+                            Button {
+                                Task { await viewModel.togglePause(monitor) }
+                            } label: {
+                                Label(
+                                    monitor.status == "paused" ? "Resume" : "Pause",
+                                    systemImage: monitor.status == "paused" ? "play.fill" : "pause.fill"
+                                )
+                            }
+                            Button(role: .destructive) {
+                                Task { await viewModel.delete(monitor) }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
-                    }
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
         }
+    }
+
+    private var dashboardSummary: some View {
+        HStack(spacing: 0) {
+            summaryCell(count: viewModel.upCount, label: "UP", color: .green)
+            Rectangle()
+                .fill(BlipColors.cardBorder)
+                .frame(width: 0.5)
+            summaryCell(count: viewModel.downCount, label: "DOWN", color: .red)
+            Rectangle()
+                .fill(BlipColors.cardBorder)
+                .frame(width: 0.5)
+            summaryCell(count: viewModel.pausedCount, label: "PAUSED", color: .orange)
+        }
+        .frame(height: 64)
+        .background(BlipColors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(BlipColors.cardBorder, lineWidth: 0.5)
+        )
+    }
+
+    private func summaryCell(count: Int, label: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text("\(count)")
+                .font(.system(size: 22, weight: .black, design: .monospaced))
+                .foregroundStyle(count > 0 ? color : BlipColors.textSecondary.opacity(0.4))
+            Text(label)
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .foregroundStyle(BlipColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -115,13 +171,12 @@ private struct MonitorCard: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Status dot with blink
             StatusDot(status: monitor.status)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(monitor.name)
                     .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundStyle(BlipColors.textPrimary)
+                    .foregroundStyle(monitor.status == "paused" ? BlipColors.textSecondary : BlipColors.textPrimary)
                     .lineLimit(1)
 
                 Text(monitor.url)
@@ -166,12 +221,14 @@ struct StatusDot: View {
         Circle()
             .fill(statusColor(for: status))
             .frame(width: 10, height: 10)
-            .opacity(isBlinking ? 0.3 : 1.0)
+            .opacity(status == "paused" ? 0.4 : (isBlinking ? 0.3 : 1.0))
             .animation(
-                .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
+                status == "paused" ? nil : .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
                 value: isBlinking
             )
-            .onAppear { isBlinking = true }
+            .onAppear {
+                if status != "paused" { isBlinking = true }
+            }
     }
 }
 
@@ -181,6 +238,7 @@ func statusColor(for status: String) -> Color {
     switch status.lowercased() {
     case "up": return .green
     case "down": return .red
+    case "paused": return .orange
     default: return .orange
     }
 }

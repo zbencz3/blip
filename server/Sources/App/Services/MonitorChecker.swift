@@ -1,12 +1,14 @@
 import Vapor
 import Fluent
 import AsyncHTTPClient
+import NIOCore
 
 struct MonitorChecker {
     static func checkAll(app: Application) async {
         do {
             let now = Date()
             let monitors = try await Monitor.query(on: app.db)
+                .filter(\.$status != "paused")
                 .all()
 
             let dueMonitors = monitors.filter { monitor in
@@ -24,6 +26,9 @@ struct MonitorChecker {
 
     static func check(monitor: Monitor, app: Application) async {
         let previousStatus = monitor.status
+        let start = DispatchTime.now()
+        var statusCode: Int = 0
+        var errorMessage: String?
 
         do {
             var request = HTTPClientRequest(url: monitor.url)
@@ -33,12 +38,13 @@ struct MonitorChecker {
                 timeout: .seconds(10)
             )
 
-            let statusCode = response.status.code
+            statusCode = Int(response.status.code)
             if (200..<300).contains(statusCode) {
                 monitor.status = "up"
                 monitor.consecutiveFailures = 0
             } else {
                 monitor.consecutiveFailures += 1
+                errorMessage = "HTTP \(statusCode)"
                 if monitor.consecutiveFailures >= 3 {
                     monitor.status = "down"
                 }
@@ -46,10 +52,14 @@ struct MonitorChecker {
         } catch {
             app.logger.warning("Monitor check failed for \(monitor.url): \(error)")
             monitor.consecutiveFailures += 1
+            errorMessage = String(describing: error).prefix(200).description
             if monitor.consecutiveFailures >= 3 {
                 monitor.status = "down"
             }
         }
+
+        let end = DispatchTime.now()
+        let responseTimeMs = Int((end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000)
 
         monitor.lastCheckedAt = Date()
 
@@ -63,6 +73,22 @@ struct MonitorChecker {
         } catch {
             app.logger.error("Failed to save monitor \(monitor.id?.uuidString ?? "?"): \(error)")
             return
+        }
+
+        // Save check history
+        if let monitorID = monitor.id {
+            let check = MonitorCheck(
+                monitorID: monitorID,
+                statusCode: statusCode,
+                responseTimeMs: responseTimeMs,
+                error: errorMessage,
+                status: monitor.status == "up" ? "up" : "down"
+            )
+            do {
+                try await check.save(on: app.db)
+            } catch {
+                app.logger.error("Failed to save monitor check: \(error)")
+            }
         }
 
         // Send notifications on status transitions

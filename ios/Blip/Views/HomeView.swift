@@ -164,14 +164,14 @@ struct HomeView: View {
 
                     // Features row — tappable
                     HStack(spacing: 12) {
+                        Button { showMonitors = true } label: {
+                            featurePill(icon: "chart.bar.fill", text: "Monitors")
+                        }
                         Button { showQRCode = true } label: {
                             featurePill(icon: "qrcode", text: "QR Code")
                         }
                         Button { showTemplates = true } label: {
                             featurePill(icon: "doc.text", text: "Templates")
-                        }
-                        Button { showMonitors = true } label: {
-                            featurePill(icon: "chart.bar.fill", text: "Monitors")
                         }
                         Button { showUseCases = true } label: {
                             featurePill(icon: "lightbulb.fill", text: "Use Cases")

@@ -1,14 +1,27 @@
 import SwiftUI
 
-struct AddMonitorSheet: View {
+struct EditMonitorSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var name = ""
-    @State private var url = ""
-    @State private var interval = 5
+    let monitor: APIClient.MonitorResponse
+    let secretManager: SecretManager
+    let apiClient: APIClient
 
-    let onCreate: (String, String, Int) async -> Void
+    @State private var name: String
+    @State private var url: String
+    @State private var interval: Int
+    @State private var isSaving = false
+    @State private var error: String?
 
     private let intervals = [1, 5, 15]
+
+    init(monitor: APIClient.MonitorResponse, secretManager: SecretManager, apiClient: APIClient) {
+        self.monitor = monitor
+        self.secretManager = secretManager
+        self.apiClient = apiClient
+        _name = State(initialValue: monitor.name)
+        _url = State(initialValue: monitor.url)
+        _interval = State(initialValue: monitor.interval / 60)
+    }
 
     private var isValid: Bool {
         !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -21,12 +34,11 @@ struct AddMonitorSheet: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        // Header
                         HStack(spacing: 8) {
                             Text("$")
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundStyle(BlipColors.accentPurple)
-                            Text("new monitor")
+                            Text("edit monitor")
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundStyle(BlipColors.textSecondary)
                         }
@@ -97,19 +109,23 @@ struct AddMonitorSheet: View {
                             }
                         }
 
+                        if let error {
+                            Text(error)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(.red)
+                        }
+
                         Spacer().frame(height: 8)
 
-                        // Add button
                         Button {
-                            Task {
-                                let monitorName = name.isEmpty ? url : name
-                                await onCreate(monitorName, url, interval * 60)
-                                dismiss()
-                            }
+                            Task { await save() }
                         } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "plus")
-                                Text("Add Monitor")
+                            Group {
+                                if isSaving {
+                                    ProgressView().tint(.black)
+                                } else {
+                                    Text("Save Changes")
+                                }
                             }
                             .font(.system(size: 16, weight: .semibold, design: .monospaced))
                             .foregroundStyle(.black)
@@ -118,13 +134,13 @@ struct AddMonitorSheet: View {
                             .background(isValid ? BlipColors.accentGreen : BlipColors.accentGreen.opacity(0.3))
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
-                        .disabled(!isValid)
+                        .disabled(!isValid || isSaving)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                 }
             }
-            .navigationTitle("Add Monitor")
+            .navigationTitle("Edit Monitor")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -138,5 +154,23 @@ struct AddMonitorSheet: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func save() async {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            let monitorName = name.isEmpty ? url : name
+            _ = try await apiClient.updateMonitor(
+                secret: secretManager.currentSecret,
+                monitorId: monitor.id,
+                name: monitorName,
+                url: url,
+                interval: interval * 60
+            )
+            dismiss()
+        } catch {
+            self.error = "Failed to save: \(error.localizedDescription)"
+        }
     }
 }

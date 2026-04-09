@@ -115,3 +115,51 @@ struct MonitorStatusResponse: Content {
         self.lastCheckedAt = monitor.lastCheckedAt
     }
 }
+
+struct MonitorStatsResponse: Content {
+    let uptime7d: Double?
+    let uptime30d: Double?
+    let avgResponseMs: Int?
+    let minResponseMs: Int?
+    let maxResponseMs: Int?
+    let totalChecks: Int
+
+    enum CodingKeys: String, CodingKey {
+        case uptime7d = "uptime_7d"
+        case uptime30d = "uptime_30d"
+        case avgResponseMs = "avg_response_ms"
+        case minResponseMs = "min_response_ms"
+        case maxResponseMs = "max_response_ms"
+        case totalChecks = "total_checks"
+    }
+}
+
+struct MonitorIncidentResponse: Content {
+    let id: UUID
+    let status: String
+    let checkedAt: Date?
+    let responseTimeMs: Int
+    let error: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, status, error
+        case checkedAt = "checked_at"
+        case responseTimeMs = "response_time_ms"
+    }
+}
+
+struct MonitorCheckResponse: Content {
+    let responseTimeMs: Int
+    let status: String
+    let checkedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case responseTimeMs = "response_time_ms"
+        case status
+        case checkedAt = "checked_at"
+    }
+}
+
+struct PauseMonitorRequest: Content {
+    let paused: Bool
+}

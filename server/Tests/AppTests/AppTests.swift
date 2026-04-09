@@ -11,6 +11,7 @@ func makeTestApp() async throws -> Application {
     app.migrations.add(CreateDeviceRegistration())
     app.migrations.add(CreatePendingResponse())
     app.migrations.add(CreateMonitor())
+    app.migrations.add(CreateMonitorCheck())
     try await app.autoMigrate()
     app.apnsServiceCustom = MockAPNsService()
     try routes(app)

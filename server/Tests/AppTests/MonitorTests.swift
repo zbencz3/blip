@@ -200,6 +200,42 @@ struct MonitorControllerTests {
         })
     }
 
+    @Test("Create monitor with proper struct encoding succeeds")
+    func createWithStructEncoding() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_int")
+
+        try await app.test(.POST, "v1/monitors", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(CreateMonitorRequest(name: "Test", url: "https://example.com", interval: 300))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            #expect(monitor?.interval == 300)
+        })
+    }
+
+    @Test("Create monitor with interval as string fails decoding")
+    func createWithStringInterval() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_str")
+
+        // Simulate the old iOS bug: interval sent as string in a [String:String] dict
+        try await app.test(.POST, "v1/monitors", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(["name": "Test", "url": "https://example.com", "interval": "300"])
+        }, afterResponse: { res async in
+            // String interval should fail — server expects Int
+            #expect(res.status == .badRequest || res.status == .unprocessableEntity)
+        })
+    }
+
     @Test("List monitors requires auth")
     func listRequiresAuth() async throws {
         let app = try await makeTestApp()
@@ -208,6 +244,181 @@ struct MonitorControllerTests {
         try await app.test(.GET, "v1/monitors", afterResponse: { res async in
             #expect(res.status == .unauthorized)
         })
+    }
+
+    @Test("Pause and resume monitor")
+    func pauseResume() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_pause")
+
+        var monitorID: UUID?
+        try await app.test(.POST, "v1/monitors", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(CreateMonitorRequest(name: "Pausable", url: "https://example.com", interval: 60))
+        }, afterResponse: { res async in
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            monitorID = monitor?.id
+        })
+
+        // Pause
+        try await app.test(.POST, "v1/monitors/\(monitorID!)/pause", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(PauseMonitorRequest(paused: true))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            #expect(monitor?.status == "paused")
+        })
+
+        // Resume
+        try await app.test(.POST, "v1/monitors/\(monitorID!)/pause", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(PauseMonitorRequest(paused: false))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            #expect(monitor?.status == "pending")
+        })
+    }
+
+    @Test("Stats endpoint returns empty stats for new monitor")
+    func statsEmpty() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_stats")
+
+        var monitorID: UUID?
+        try await app.test(.POST, "v1/monitors", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(CreateMonitorRequest(name: "Stats Test", url: "https://example.com", interval: 60))
+        }, afterResponse: { res async in
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            monitorID = monitor?.id
+        })
+
+        try await app.test(.GET, "v1/monitors/\(monitorID!)/stats", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let stats = try? res.content.decode(MonitorStatsResponse.self)
+            #expect(stats?.totalChecks == 0)
+            #expect(stats?.uptime7d == nil)
+            #expect(stats?.avgResponseMs == nil)
+        })
+    }
+
+    @Test("Stats endpoint returns computed values")
+    func statsWithChecks() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_stats2")
+
+        let user = try await User.query(on: app.db).filter(\.$secret == secret).first()!
+        let monitor = Monitor(userID: user.id!, name: "Stats", url: "https://example.com", interval: 60, status: "up")
+        try await monitor.save(on: app.db)
+
+        // Insert some checks
+        for i in 0..<10 {
+            let check = MonitorCheck(
+                monitorID: monitor.id!,
+                statusCode: 200,
+                responseTimeMs: 100 + i * 10,
+                status: "up"
+            )
+            try await check.save(on: app.db)
+        }
+
+        try await app.test(.GET, "v1/monitors/\(monitor.id!)/stats", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let stats = try? res.content.decode(MonitorStatsResponse.self)
+            #expect(stats?.totalChecks == 10)
+            #expect(stats?.uptime7d == 100.0)
+            #expect(stats?.uptime30d == 100.0)
+            #expect(stats?.avgResponseMs == 145)
+            #expect(stats?.minResponseMs == 100)
+            #expect(stats?.maxResponseMs == 190)
+        })
+    }
+
+    @Test("Incidents endpoint returns down checks")
+    func incidentsEndpoint() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_inc")
+
+        let user = try await User.query(on: app.db).filter(\.$secret == secret).first()!
+        let monitor = Monitor(userID: user.id!, name: "Incidents", url: "https://example.com", interval: 60, status: "up")
+        try await monitor.save(on: app.db)
+
+        // Insert up and down checks
+        let upCheck = MonitorCheck(monitorID: monitor.id!, statusCode: 200, responseTimeMs: 100, status: "up")
+        try await upCheck.save(on: app.db)
+        let downCheck = MonitorCheck(monitorID: monitor.id!, statusCode: 500, responseTimeMs: 5000, error: "HTTP 500", status: "down")
+        try await downCheck.save(on: app.db)
+
+        try await app.test(.GET, "v1/monitors/\(monitor.id!)/incidents", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let incidents = try? res.content.decode([MonitorIncidentResponse].self)
+            #expect(incidents?.count == 1)
+            #expect(incidents?.first?.error == "HTTP 500")
+        })
+    }
+
+    @Test("Checks endpoint returns recent checks for chart")
+    func checksEndpoint() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_checks")
+
+        let user = try await User.query(on: app.db).filter(\.$secret == secret).first()!
+        let monitor = Monitor(userID: user.id!, name: "Checks", url: "https://example.com", interval: 60, status: "up")
+        try await monitor.save(on: app.db)
+
+        for i in 0..<5 {
+            let check = MonitorCheck(monitorID: monitor.id!, statusCode: 200, responseTimeMs: 50 + i * 20, status: "up")
+            try await check.save(on: app.db)
+        }
+
+        try await app.test(.GET, "v1/monitors/\(monitor.id!)/checks", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let checks = try? res.content.decode([MonitorCheckResponse].self)
+            #expect(checks?.count == 5)
+        })
+    }
+
+    @Test("Paused monitors are skipped by checker filter")
+    func pausedMonitorsSkipped() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+
+        let monitor = Monitor(userID: user.id!, name: "Paused", url: "https://example.com", interval: 60, status: "paused")
+        try await monitor.save(on: app.db)
+
+        // Query same as MonitorChecker — paused should be excluded
+        let active = try await Monitor.query(on: app.db)
+            .filter(\.$status != "paused")
+            .all()
+        #expect(active.isEmpty)
     }
 
     // MARK: - Helpers
@@ -329,6 +540,26 @@ struct MonitorCheckerTests {
         #expect(mock.sent[0].deviceToken == "checker_tok_2")
     }
 
+    @Test("Cascade delete removes monitor checks when monitor is deleted")
+    func cascadeDeleteChecks() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+
+        let monitor = Monitor(userID: user.id!, name: "Test", url: "https://example.com", interval: 60, status: "up")
+        try await monitor.save(on: app.db)
+
+        let check = MonitorCheck(monitorID: monitor.id!, statusCode: 200, responseTimeMs: 100, status: "up")
+        try await check.save(on: app.db)
+
+        try await monitor.delete(on: app.db)
+
+        let checks = try await MonitorCheck.query(on: app.db).all()
+        #expect(checks.isEmpty)
+    }
+
     @Test("Cascade delete removes monitors when user is deleted")
     func cascadeDelete() async throws {
         let app = try await makeTestApp()
@@ -344,5 +575,129 @@ struct MonitorCheckerTests {
 
         let found = try await Monitor.find(monitor.id, on: app.db)
         #expect(found == nil)
+    }
+}
+
+@Suite("Status Page")
+struct StatusPageTests {
+    @Test("Status page returns HTML for valid secret")
+    func statusPageValid() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        let user = User(secret: secret)
+        try await user.save(on: app.db)
+
+        let monitor = Monitor(userID: user.id!, name: "My API", url: "https://example.com", interval: 60, status: "up")
+        monitor.lastCheckedAt = Date()
+        try await monitor.save(on: app.db)
+
+        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+            #expect(res.status == .ok)
+            let body = res.body.string
+            #expect(body.contains("My API"))
+            #expect(body.contains("ALL SYSTEMS OPERATIONAL"))
+            #expect(body.contains("UP"))
+            #expect(res.headers.contentType?.serialize().contains("text/html") == true)
+        })
+    }
+
+    @Test("Status page shows degraded when a monitor is down")
+    func statusPageDegraded() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        let user = User(secret: secret)
+        try await user.save(on: app.db)
+
+        let up = Monitor(userID: user.id!, name: "Healthy", url: "https://up.com", interval: 60, status: "up")
+        try await up.save(on: app.db)
+        let down = Monitor(userID: user.id!, name: "Broken", url: "https://down.com", interval: 60, status: "down")
+        try await down.save(on: app.db)
+
+        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+            #expect(res.status == .ok)
+            let body = res.body.string
+            #expect(body.contains("DEGRADED"))
+            #expect(body.contains("Healthy"))
+            #expect(body.contains("Broken"))
+        })
+    }
+
+    @Test("Status page hides paused monitors")
+    func statusPageHidesPaused() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        let user = User(secret: secret)
+        try await user.save(on: app.db)
+
+        let active = Monitor(userID: user.id!, name: "Active", url: "https://active.com", interval: 60, status: "up")
+        try await active.save(on: app.db)
+        let paused = Monitor(userID: user.id!, name: "Paused One", url: "https://paused.com", interval: 60, status: "paused")
+        try await paused.save(on: app.db)
+
+        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+            let body = res.body.string
+            #expect(body.contains("Active"))
+            #expect(!body.contains("Paused One"))
+        })
+    }
+
+    @Test("Status page returns 404 for invalid secret")
+    func statusPageInvalid() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        try await app.test(.GET, "status/nonexistent_secret", afterResponse: { res async in
+            #expect(res.status == .notFound)
+        })
+    }
+
+    @Test("Status page shows uptime stats from checks")
+    func statusPageWithStats() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        let user = User(secret: secret)
+        try await user.save(on: app.db)
+
+        let monitor = Monitor(userID: user.id!, name: "Tracked", url: "https://tracked.com", interval: 60, status: "up")
+        monitor.lastCheckedAt = Date()
+        try await monitor.save(on: app.db)
+
+        for _ in 0..<5 {
+            let check = MonitorCheck(monitorID: monitor.id!, statusCode: 200, responseTimeMs: 150, status: "up")
+            try await check.save(on: app.db)
+        }
+
+        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+            let body = res.body.string
+            #expect(body.contains("100.0%"))
+            #expect(body.contains("150ms"))
+        })
+    }
+
+    @Test("Status page escapes HTML in monitor names")
+    func statusPageXSS() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        let user = User(secret: secret)
+        try await user.save(on: app.db)
+
+        let monitor = Monitor(userID: user.id!, name: "<script>alert(1)</script>", url: "https://xss.com", interval: 60, status: "up")
+        try await monitor.save(on: app.db)
+
+        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+            let body = res.body.string
+            #expect(!body.contains("<script>"))
+            #expect(body.contains("&lt;script&gt;"))
+        })
     }
 }

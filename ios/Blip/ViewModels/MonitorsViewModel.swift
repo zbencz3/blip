@@ -10,6 +10,10 @@ final class MonitorsViewModel {
     var isLoading = false
     var error: String?
 
+    var upCount: Int { monitors.filter { $0.status == "up" }.count }
+    var downCount: Int { monitors.filter { $0.status == "down" }.count }
+    var pausedCount: Int { monitors.filter { $0.status == "paused" }.count }
+
     init(secretManager: SecretManager, apiClient: APIClient = APIClient()) {
         self.secretManager = secretManager
         self.apiClient = apiClient
@@ -48,6 +52,22 @@ final class MonitorsViewModel {
                 monitorId: monitor.id
             )
             monitors.removeAll { $0.id == monitor.id }
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    func togglePause(_ monitor: APIClient.MonitorResponse) async {
+        let shouldPause = monitor.status != "paused"
+        do {
+            let updated = try await apiClient.pauseMonitor(
+                secret: secretManager.currentSecret,
+                monitorId: monitor.id,
+                paused: shouldPause
+            )
+            if let index = monitors.firstIndex(where: { $0.id == monitor.id }) {
+                monitors[index] = updated
+            }
         } catch {
             self.error = error.localizedDescription
         }

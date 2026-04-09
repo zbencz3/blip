@@ -113,6 +113,15 @@ struct APIClient {
         try await sendPayload(payload, secret: secret)
     }
 
+    func sendStatusPagePush(secret: String, statusPageURL: String) async throws {
+        let payload: [String: Any] = [
+            "title": "Status Page",
+            "message": "Tap to view your status page",
+            "open_url": statusPageURL
+        ]
+        try await sendPayload(payload, secret: secret)
+    }
+
     private func sendPayload(_ payload: [String: Any], secret: String) async throws {
         var request = URLRequest(url: URL(string: "\(baseURL)/\(secret)")!)
         request.httpMethod = "POST"
@@ -173,14 +182,16 @@ struct APIClient {
         return try await perform(request)
     }
 
+    private struct CreateMonitorBody: Encodable {
+        let name: String
+        let url: String
+        let interval: Int
+    }
+
     func createMonitor(secret: String, name: String, url: String, interval: Int) async throws -> MonitorResponse {
         var request = makeRequest(path: "monitors", method: "POST")
         request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONEncoder().encode([
-            "name": name,
-            "url": url,
-            "interval": "\(interval)"
-        ])
+        request.httpBody = try JSONEncoder().encode(CreateMonitorBody(name: name, url: url, interval: interval))
         return try await perform(request)
     }
 
@@ -197,11 +208,79 @@ struct APIClient {
     func updateMonitor(secret: String, monitorId: UUID, name: String, url: String, interval: Int) async throws -> MonitorResponse {
         var request = makeRequest(path: "monitors/\(monitorId)", method: "PATCH")
         request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONEncoder().encode([
-            "name": name,
-            "url": url,
-            "interval": "\(interval)"
-        ])
+        request.httpBody = try JSONEncoder().encode(CreateMonitorBody(name: name, url: url, interval: interval))
+        return try await perform(request)
+    }
+
+    // MARK: - Monitor Stats
+
+    struct MonitorStatsResponse: Codable {
+        let uptime7d: Double?
+        let uptime30d: Double?
+        let avgResponseMs: Int?
+        let minResponseMs: Int?
+        let maxResponseMs: Int?
+        let totalChecks: Int
+
+        enum CodingKeys: String, CodingKey {
+            case uptime7d = "uptime_7d"
+            case uptime30d = "uptime_30d"
+            case avgResponseMs = "avg_response_ms"
+            case minResponseMs = "min_response_ms"
+            case maxResponseMs = "max_response_ms"
+            case totalChecks = "total_checks"
+        }
+    }
+
+    struct MonitorIncidentResponse: Codable, Identifiable {
+        let id: UUID
+        let status: String
+        let checkedAt: Date?
+        let responseTimeMs: Int
+        let error: String?
+
+        enum CodingKeys: String, CodingKey {
+            case id, status, error
+            case checkedAt = "checked_at"
+            case responseTimeMs = "response_time_ms"
+        }
+    }
+
+    struct MonitorCheckResponse: Codable, Identifiable {
+        var id: Date? { checkedAt }
+        let responseTimeMs: Int
+        let status: String
+        let checkedAt: Date?
+
+        enum CodingKeys: String, CodingKey {
+            case responseTimeMs = "response_time_ms"
+            case status
+            case checkedAt = "checked_at"
+        }
+    }
+
+    func monitorStats(secret: String, monitorId: UUID) async throws -> MonitorStatsResponse {
+        var request = makeRequest(path: "monitors/\(monitorId)/stats", method: "GET")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        return try await perform(request)
+    }
+
+    func monitorIncidents(secret: String, monitorId: UUID) async throws -> [MonitorIncidentResponse] {
+        var request = makeRequest(path: "monitors/\(monitorId)/incidents", method: "GET")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        return try await perform(request)
+    }
+
+    func monitorChecks(secret: String, monitorId: UUID) async throws -> [MonitorCheckResponse] {
+        var request = makeRequest(path: "monitors/\(monitorId)/checks", method: "GET")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        return try await perform(request)
+    }
+
+    func pauseMonitor(secret: String, monitorId: UUID, paused: Bool) async throws -> MonitorResponse {
+        var request = makeRequest(path: "monitors/\(monitorId)/pause", method: "POST")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(["paused": paused])
         return try await perform(request)
     }
 }
