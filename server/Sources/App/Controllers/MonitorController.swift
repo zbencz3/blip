@@ -39,12 +39,29 @@ struct MonitorController: RouteCollection {
             throw Abort(.forbidden, reason: "Monitor limit reached (\(limit)). Upgrade to add more.")
         }
 
+        let monitorType = input.type ?? "http"
+        let resolvedMethod = monitorType == "heartbeat" ? "HEAD" : input.resolvedMethod
+
         let monitor = Monitor(
             userID: userID,
             name: input.name,
-            url: input.url,
-            interval: input.interval
+            url: input.url ?? "",
+            interval: input.interval,
+            type: monitorType,
+            method: resolvedMethod,
+            keyword: input.keyword,
+            keywordShouldExist: input.keywordShouldExist ?? true,
+            failureThreshold: input.failureThreshold ?? 3,
+            gracePeriod: input.gracePeriod ?? (monitorType == "heartbeat" ? input.interval : nil)
         )
+
+        if monitorType == "heartbeat" {
+            let token = Monitor.generateHeartbeatToken()
+            monitor.heartbeatToken = token
+            let baseURL = Environment.get("BASE_URL") ?? "https://bzap-server.fly.dev"
+            monitor.url = "\(baseURL)/v1/heartbeat/\(token)"
+        }
+
         try await monitor.save(on: req.db)
         return try MonitorResponse(from: monitor)
     }
@@ -82,7 +99,7 @@ struct MonitorController: RouteCollection {
         try input.validate()
 
         if let name = input.name { monitor.name = name }
-        if let url = input.url {
+        if let url = input.url, monitor.type == "http" {
             monitor.url = url
             monitor.status = "pending"
             monitor.consecutiveFailures = 0
@@ -90,6 +107,15 @@ struct MonitorController: RouteCollection {
             monitor.lastStatusChange = nil
         }
         if let interval = input.interval { monitor.interval = interval }
+        if let method = input.method, monitor.type == "http" { monitor.method = method }
+        if let keyword = input.keyword {
+            monitor.keyword = keyword
+            // Auto-switch HEAD to GET when keyword is set
+            if monitor.method == "HEAD" { monitor.method = "GET" }
+        }
+        if let keywordShouldExist = input.keywordShouldExist { monitor.keywordShouldExist = keywordShouldExist }
+        if let failureThreshold = input.failureThreshold { monitor.failureThreshold = failureThreshold }
+        if let gracePeriod = input.gracePeriod { monitor.gracePeriod = gracePeriod }
 
         try await monitor.save(on: req.db)
         return try MonitorResponse(from: monitor)

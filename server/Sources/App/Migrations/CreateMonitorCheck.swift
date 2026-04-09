@@ -9,6 +9,7 @@ struct CreateMonitorCheck: AsyncMigration {
             .field("response_time_ms", .int, .required)
             .field("error", .string)
             .field("status", .string, .required)
+            .field("keyword_matched", .bool)
             .field("checked_at", .datetime)
             .create()
     }

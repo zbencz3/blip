@@ -72,6 +72,10 @@ struct StatusPageController: RouteCollection {
                 statusClass = "pending"
             }
 
+            let isHeartbeat = monitor.type == "heartbeat"
+            let typeLabel = isHeartbeat ? "HEARTBEAT" : "HTTP"
+            let checkLabel = isHeartbeat ? "last ping" : "checked"
+
             let lastCheck: String
             if let date = monitor.lastCheckedAt {
                 let ago = Int(Date().timeIntervalSince(date))
@@ -94,9 +98,10 @@ struct StatusPageController: RouteCollection {
                     <span class="status \(statusClass)">\(statusText)</span>
                 </div>
                 <div class="monitor-meta">
+                    <span>\(typeLabel)</span>
                     <span>uptime: \(uptime7d)</span>
                     <span>avg: \(avgMs)</span>
-                    <span>checked: \(lastCheck)</span>
+                    <span>\(checkLabel): \(lastCheck)</span>
                 </div>
             </div>
             """

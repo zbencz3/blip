@@ -13,6 +13,15 @@ final class Monitor: Model, Content, @unchecked Sendable {
     @OptionalField(key: "last_checked_at") var lastCheckedAt: Date?
     @OptionalField(key: "last_status_change") var lastStatusChange: Date?
     @Field(key: "consecutive_failures") var consecutiveFailures: Int
+    @Field(key: "type") var type: String
+    @OptionalField(key: "heartbeat_token") var heartbeatToken: String?
+    @OptionalField(key: "grace_period") var gracePeriod: Int?
+    @Field(key: "method") var method: String
+    @OptionalField(key: "keyword") var keyword: String?
+    @Field(key: "keyword_should_exist") var keywordShouldExist: Bool
+    @Field(key: "failure_threshold") var failureThreshold: Int
+    @OptionalField(key: "ssl_expires_at") var sslExpiresAt: Date?
+    @Field(key: "ssl_alert_days") var sslAlertDays: Int
     @Timestamp(key: "created_at", on: .create) var createdAt: Date?
     @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
 
@@ -25,7 +34,14 @@ final class Monitor: Model, Content, @unchecked Sendable {
         url: String,
         interval: Int,
         status: String = "pending",
-        consecutiveFailures: Int = 0
+        consecutiveFailures: Int = 0,
+        type: String = "http",
+        method: String = "HEAD",
+        keyword: String? = nil,
+        keywordShouldExist: Bool = true,
+        failureThreshold: Int = 3,
+        gracePeriod: Int? = nil,
+        sslAlertDays: Int = 14
     ) {
         self.id = id
         self.$user.id = userID
@@ -34,5 +50,17 @@ final class Monitor: Model, Content, @unchecked Sendable {
         self.interval = interval
         self.status = status
         self.consecutiveFailures = consecutiveFailures
+        self.type = type
+        self.method = method
+        self.keyword = keyword
+        self.keywordShouldExist = keywordShouldExist
+        self.failureThreshold = failureThreshold
+        self.gracePeriod = gracePeriod
+        self.sslAlertDays = sslAlertDays
+    }
+
+    static func generateHeartbeatToken() -> String {
+        let bytes = (0..<16).map { _ in UInt8.random(in: 0...255) }
+        return "bps_hb_" + bytes.map { String(format: "%02x", $0) }.joined()
     }
 }

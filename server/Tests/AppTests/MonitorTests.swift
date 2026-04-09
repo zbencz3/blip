@@ -421,6 +421,102 @@ struct MonitorControllerTests {
         #expect(active.isEmpty)
     }
 
+    @Test("Create heartbeat monitor generates token")
+    func createHeartbeatMonitor() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_hb1")
+
+        try await app.test(.POST, "v1/monitors", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(CreateMonitorRequest(name: "My Cron", interval: 300, type: "heartbeat"))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            #expect(monitor?.name == "My Cron")
+            #expect(monitor?.type == "heartbeat")
+            #expect(monitor?.heartbeatToken != nil)
+            #expect(monitor?.heartbeatToken?.hasPrefix("bps_hb_") == true)
+            #expect(monitor?.heartbeatUrl != nil)
+            #expect(monitor?.heartbeatUrl?.contains("/v1/heartbeat/") == true)
+            #expect(monitor?.url.contains("/v1/heartbeat/") == true)
+            #expect(monitor?.gracePeriod == 300) // defaults to interval
+        })
+    }
+
+    @Test("Create monitor with keyword")
+    func createMonitorWithKeyword() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_kw")
+
+        try await app.test(.POST, "v1/monitors", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(CreateMonitorRequest(
+                name: "Keyword Check",
+                url: "https://example.com",
+                interval: 60,
+                keyword: "healthy"
+            ))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            #expect(monitor?.keyword == "healthy")
+            #expect(monitor?.method == "GET") // auto-switched from HEAD
+            #expect(monitor?.keywordShouldExist == true)
+        })
+    }
+
+    @Test("Create monitor with custom method")
+    func createMonitorWithCustomMethod() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_method")
+
+        try await app.test(.POST, "v1/monitors", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(CreateMonitorRequest(
+                name: "GET Monitor",
+                url: "https://example.com",
+                interval: 60,
+                method: "GET"
+            ))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            #expect(monitor?.method == "GET")
+        })
+    }
+
+    @Test("Create monitor with custom failure threshold")
+    func createMonitorWithCustomThreshold() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let secret = SecretGenerator.generate()
+        try await registerDevice(app: app, secret: secret, token: "mon_tok_thresh")
+
+        try await app.test(.POST, "v1/monitors", beforeRequest: { req async throws in
+            req.headers.bearerAuthorization = .init(token: secret)
+            try req.content.encode(CreateMonitorRequest(
+                name: "Strict Monitor",
+                url: "https://example.com",
+                interval: 60,
+                failureThreshold: 1
+            ))
+        }, afterResponse: { res async in
+            #expect(res.status == .ok)
+            let monitor = try? res.content.decode(MonitorResponse.self)
+            #expect(monitor?.failureThreshold == 1)
+        })
+    }
+
     // MARK: - Helpers
 
     private func registerDevice(app: Application, secret: String, token: String) async throws {
@@ -431,6 +527,148 @@ struct MonitorControllerTests {
                 "device_name": "iPhone"
             ])
         })
+    }
+}
+
+@Suite("Heartbeat Endpoint")
+struct HeartbeatEndpointTests {
+    @Test("POST heartbeat token returns 200")
+    func postHeartbeat() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+
+        let token = Monitor.generateHeartbeatToken()
+        let monitor = Monitor(
+            userID: user.id!,
+            name: "Cron Job",
+            url: "https://bzap-server.fly.dev/v1/heartbeat/\(token)",
+            interval: 300,
+            type: "heartbeat"
+        )
+        monitor.heartbeatToken = token
+        try await monitor.save(on: app.db)
+
+        try await app.test(.POST, "v1/heartbeat/\(token)", afterResponse: { res async in
+            #expect(res.status == .ok)
+            let body = try? res.content.decode([String: String].self)
+            #expect(body?["status"] == "ok")
+        })
+
+        // Verify monitor was updated
+        let saved = try await Monitor.find(monitor.id, on: app.db)
+        #expect(saved?.status == "up")
+        #expect(saved?.consecutiveFailures == 0)
+        #expect(saved?.lastCheckedAt != nil)
+    }
+
+    @Test("GET heartbeat token also works")
+    func getHeartbeat() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+
+        let token = Monitor.generateHeartbeatToken()
+        let monitor = Monitor(
+            userID: user.id!,
+            name: "Cron Job",
+            url: "https://bzap-server.fly.dev/v1/heartbeat/\(token)",
+            interval: 300,
+            type: "heartbeat"
+        )
+        monitor.heartbeatToken = token
+        try await monitor.save(on: app.db)
+
+        try await app.test(.GET, "v1/heartbeat/\(token)", afterResponse: { res async in
+            #expect(res.status == .ok)
+            let body = try? res.content.decode([String: String].self)
+            #expect(body?["status"] == "ok")
+        })
+    }
+
+    @Test("POST heartbeat with invalid token returns 404")
+    func invalidToken() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        try await app.test(.POST, "v1/heartbeat/invalid_token_here", afterResponse: { res async in
+            #expect(res.status == .notFound)
+        })
+    }
+
+    @Test("Heartbeat on down monitor triggers recovery")
+    func heartbeatRecovery() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+
+        let device = DeviceRegistration(
+            userID: user.id!,
+            deviceToken: "hb_recovery_tok",
+            deviceName: "iPhone",
+            deviceSecret: SecretGenerator.generate()
+        )
+        try await device.save(on: app.db)
+
+        let token = Monitor.generateHeartbeatToken()
+        let monitor = Monitor(
+            userID: user.id!,
+            name: "Cron Job",
+            url: "https://bzap-server.fly.dev/v1/heartbeat/\(token)",
+            interval: 300,
+            status: "down",
+            type: "heartbeat"
+        )
+        monitor.heartbeatToken = token
+        monitor.consecutiveFailures = 3
+        try await monitor.save(on: app.db)
+
+        try await app.test(.POST, "v1/heartbeat/\(token)", afterResponse: { res async in
+            #expect(res.status == .ok)
+        })
+
+        let saved = try await Monitor.find(monitor.id, on: app.db)
+        #expect(saved?.status == "up")
+        #expect(saved?.consecutiveFailures == 0)
+
+        // Recovery notification should have been sent
+        let mock = mockAPNs(from: app)
+        #expect(mock.sent.count == 1)
+        #expect(mock.sent[0].payload.title?.contains("back up") == true)
+    }
+
+    @Test("Heartbeat paused monitor is skipped by checker")
+    func heartbeatPausedSkipped() async throws {
+        let app = try await makeTestApp()
+        defer { Task { try? await app.asyncShutdown() } }
+
+        let user = User(secret: SecretGenerator.generate())
+        try await user.save(on: app.db)
+
+        let token = Monitor.generateHeartbeatToken()
+        let monitor = Monitor(
+            userID: user.id!,
+            name: "Paused HB",
+            url: "https://bzap-server.fly.dev/v1/heartbeat/\(token)",
+            interval: 60,
+            status: "paused",
+            type: "heartbeat"
+        )
+        monitor.heartbeatToken = token
+        monitor.lastCheckedAt = Date().addingTimeInterval(-3600) // well overdue
+        try await monitor.save(on: app.db)
+
+        // Paused monitors excluded by checkAll query
+        let active = try await Monitor.query(on: app.db)
+            .filter(\.$status != "paused")
+            .all()
+        #expect(active.isEmpty)
     }
 }
 

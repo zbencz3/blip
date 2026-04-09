@@ -10,6 +10,7 @@ final class MonitorCheck: Model, Content, @unchecked Sendable {
     @Field(key: "response_time_ms") var responseTimeMs: Int
     @OptionalField(key: "error") var error: String?
     @Field(key: "status") var status: String
+    @OptionalField(key: "keyword_matched") var keywordMatched: Bool?
     @Timestamp(key: "checked_at", on: .create) var checkedAt: Date?
 
     init() {}
@@ -20,7 +21,8 @@ final class MonitorCheck: Model, Content, @unchecked Sendable {
         statusCode: Int,
         responseTimeMs: Int,
         error: String? = nil,
-        status: String
+        status: String,
+        keywordMatched: Bool? = nil
     ) {
         self.id = id
         self.$monitor.id = monitorID
@@ -28,5 +30,6 @@ final class MonitorCheck: Model, Content, @unchecked Sendable {
         self.responseTimeMs = responseTimeMs
         self.error = error
         self.status = status
+        self.keywordMatched = keywordMatched
     }
 }

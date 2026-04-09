@@ -25,6 +25,9 @@ func routes(_ app: Application) throws {
 
     try rateLimited.register(collection: MonitorController())
 
+    // Public heartbeat endpoint (no auth, no rate limit)
+    try app.register(collection: HeartbeatController())
+
     // Public status page (no auth, no rate limit)
     try app.register(collection: StatusPageController())
 }

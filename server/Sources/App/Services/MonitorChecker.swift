@@ -17,22 +17,28 @@ struct MonitorChecker {
             }
 
             for monitor in dueMonitors {
-                await check(monitor: monitor, app: app)
+                if monitor.type == "heartbeat" {
+                    await checkHeartbeat(monitor: monitor, app: app)
+                } else {
+                    await checkHTTP(monitor: monitor, app: app)
+                }
             }
         } catch {
             app.logger.error("MonitorChecker.checkAll failed: \(error)")
         }
     }
 
-    static func check(monitor: Monitor, app: Application) async {
+    static func checkHTTP(monitor: Monitor, app: Application) async {
         let previousStatus = monitor.status
         let start = DispatchTime.now()
         var statusCode: Int = 0
         var errorMessage: String?
+        var keywordMatched: Bool?
 
         do {
             var request = HTTPClientRequest(url: monitor.url)
-            request.method = .HEAD
+            request.method = monitor.method == "GET" ? .GET : .HEAD
+
             let response = try await app.http.client.shared.execute(
                 request,
                 timeout: .seconds(10)
@@ -40,12 +46,34 @@ struct MonitorChecker {
 
             statusCode = Int(response.status.code)
             if (200..<300).contains(statusCode) {
-                monitor.status = "up"
-                monitor.consecutiveFailures = 0
+                // Check keyword if configured and using GET
+                if let keyword = monitor.keyword, monitor.method == "GET" {
+                    let body = try await response.body.collect(upTo: 1_048_576) // 1MB limit
+                    let bodyString = String(buffer: body)
+                    let found = bodyString.contains(keyword)
+                    keywordMatched = found
+
+                    let shouldExist = monitor.keywordShouldExist
+                    if (shouldExist && !found) || (!shouldExist && found) {
+                        monitor.consecutiveFailures += 1
+                        errorMessage = shouldExist
+                            ? "Keyword '\(keyword)' not found"
+                            : "Keyword '\(keyword)' found (should not exist)"
+                        if monitor.consecutiveFailures >= monitor.failureThreshold {
+                            monitor.status = "down"
+                        }
+                    } else {
+                        monitor.status = "up"
+                        monitor.consecutiveFailures = 0
+                    }
+                } else {
+                    monitor.status = "up"
+                    monitor.consecutiveFailures = 0
+                }
             } else {
                 monitor.consecutiveFailures += 1
                 errorMessage = "HTTP \(statusCode)"
-                if monitor.consecutiveFailures >= 3 {
+                if monitor.consecutiveFailures >= monitor.failureThreshold {
                     monitor.status = "down"
                 }
             }
@@ -53,7 +81,7 @@ struct MonitorChecker {
             app.logger.warning("Monitor check failed for \(monitor.url): \(error)")
             monitor.consecutiveFailures += 1
             errorMessage = String(describing: error).prefix(200).description
-            if monitor.consecutiveFailures >= 3 {
+            if monitor.consecutiveFailures >= monitor.failureThreshold {
                 monitor.status = "down"
             }
         }
@@ -82,7 +110,8 @@ struct MonitorChecker {
                 statusCode: statusCode,
                 responseTimeMs: responseTimeMs,
                 error: errorMessage,
-                status: errorMessage == nil ? "up" : "down"
+                status: errorMessage == nil ? "up" : "down",
+                keywordMatched: keywordMatched
             )
             do {
                 try await check.save(on: app.db)
@@ -95,19 +124,75 @@ struct MonitorChecker {
         if statusChanged {
             if monitor.status == "down" {
                 await sendNotification(
-                    title: "🔴 \(monitor.name) is down",
-                    body: "\(monitor.url) is not responding.",
+                    title: "\u{1F534} \(monitor.name) is down",
+                    body: errorMessage ?? "\(monitor.url) is not responding.",
                     monitor: monitor,
                     app: app
                 )
             } else if monitor.status == "up" && previousStatus == "down" {
                 await sendNotification(
-                    title: "🟢 \(monitor.name) is back up",
+                    title: "\u{1F7E2} \(monitor.name) is back up",
                     body: "\(monitor.url) is responding again.",
                     monitor: monitor,
                     app: app
                 )
             }
+        }
+    }
+
+    static func checkHeartbeat(monitor: Monitor, app: Application) async {
+        let previousStatus = monitor.status
+
+        // If no heartbeat ever received, skip (still pending)
+        guard let lastChecked = monitor.lastCheckedAt else { return }
+
+        let gracePeriod = monitor.gracePeriod ?? monitor.interval
+        let deadline = lastChecked.addingTimeInterval(Double(monitor.interval + gracePeriod))
+
+        // Not overdue yet
+        guard Date() > deadline else { return }
+
+        // Already marked down, don't re-trigger
+        guard monitor.status != "down" else { return }
+
+        monitor.consecutiveFailures += 1
+
+        if monitor.consecutiveFailures >= monitor.failureThreshold {
+            monitor.status = "down"
+            monitor.lastStatusChange = Date()
+        }
+
+        do {
+            try await monitor.save(on: app.db)
+        } catch {
+            app.logger.error("Failed to save heartbeat monitor \(monitor.id?.uuidString ?? "?"): \(error)")
+            return
+        }
+
+        // Save check record
+        if let monitorID = monitor.id {
+            let check = MonitorCheck(
+                monitorID: monitorID,
+                statusCode: 0,
+                responseTimeMs: 0,
+                error: "Heartbeat overdue",
+                status: "down"
+            )
+            do {
+                try await check.save(on: app.db)
+            } catch {
+                app.logger.error("Failed to save heartbeat check: \(error)")
+            }
+        }
+
+        // Send notification if just went down
+        if monitor.status == "down" && previousStatus != "down" {
+            await sendNotification(
+                title: "\u{1F534} \(monitor.name) missed heartbeat",
+                body: "No heartbeat received within the expected interval.",
+                monitor: monitor,
+                app: app
+            )
         }
     }
 
