@@ -156,6 +156,12 @@ struct SubscriptionView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .foregroundStyle(BlipColors.textPrimary)
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button("Manage Subscription") {
