@@ -5,6 +5,7 @@ struct CreateUser: AsyncMigration {
         try await database.schema("users")
             .id()
             .field("secret", .string, .required)
+            .field("status_token", .string)
             .field("created_at", .datetime)
             .field("updated_at", .datetime)
             .unique(on: "secret")

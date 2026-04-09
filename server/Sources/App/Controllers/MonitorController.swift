@@ -16,6 +16,7 @@ struct MonitorController: RouteCollection {
         monitors.get(":monitorID", "incidents", use: incidents)
         monitors.get(":monitorID", "checks", use: checks)
         monitors.post(":monitorID", "pause", use: pause)
+        routes.grouped("v1").get("status-token", use: statusToken)
     }
 
     @Sendable
@@ -200,6 +201,16 @@ struct MonitorController: RouteCollection {
 
         try await monitor.save(on: req.db)
         return try MonitorResponse(from: monitor)
+    }
+
+    @Sendable
+    func statusToken(req: Request) async throws -> [String: String] {
+        let user = try await requireUser(from: req)
+        if user.statusToken == nil {
+            user.statusToken = User.generateStatusToken()
+            try await user.save(on: req.db)
+        }
+        return ["status_token": user.statusToken ?? ""]
     }
 
     // MARK: - Helpers

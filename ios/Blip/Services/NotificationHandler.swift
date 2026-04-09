@@ -28,6 +28,9 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
         let userInfo = response.notification.request.content.userInfo
         let actionIdentifier = response.actionIdentifier
 
+        // Save to history (covers background/killed state notifications)
+        onNotificationReceived?(response.notification)
+
         switch actionIdentifier {
         case "COPY_MESSAGE":
             let body = response.notification.request.content.body

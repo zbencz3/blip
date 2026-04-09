@@ -17,9 +17,11 @@ struct MonitorDetailView: View {
     @State private var isLoading = true
     @State private var showCopied = false
     @State private var showSent = false
+    @State private var statusToken: String?
 
-    private var statusPageURL: String {
-        "\(Constants.baseURL)/status/\(secretManager.currentSecret)"
+    private var statusPageURL: String? {
+        guard let token = statusToken else { return nil }
+        return "\(Constants.baseURL)/status/\(token)"
     }
 
     var body: some View {
@@ -271,49 +273,51 @@ struct MonitorDetailView: View {
     // MARK: - Status Page Card
 
     private var statusPageCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("STATUS PAGE")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundStyle(BlipColors.textSecondary)
+        Group {
+            if let statusPageURL {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("STATUS PAGE")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(BlipColors.textSecondary)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                Button {
-                    if let url = URL(string: statusPageURL) {
-                        #if canImport(UIKit)
-                        UIApplication.shared.open(url)
-                        #endif
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        Button {
+                            if let url = URL(string: statusPageURL) {
+                                #if canImport(UIKit)
+                                UIApplication.shared.open(url)
+                                #endif
+                            }
+                        } label: {
+                            Text(statusPageURL)
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(BlipColors.accentPurple)
+                                .underline()
+                        }
                     }
-                } label: {
-                    Text(statusPageURL)
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundStyle(BlipColors.accentPurple)
-                        .underline()
-                }
-            }
 
-            HStack(spacing: 10) {
-                Button {
-                    #if canImport(UIKit)
-                    UIPasteboard.general.string = statusPageURL
-                    #endif
-                    showCopied = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        showCopied = false
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
-                        Text(showCopied ? "Copied!" : "Copy")
-                    }
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.black)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(BlipColors.accentGreen)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
+                    HStack(spacing: 10) {
+                        Button {
+                            #if canImport(UIKit)
+                            UIPasteboard.general.string = statusPageURL
+                            #endif
+                            showCopied = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                showCopied = false
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                                Text(showCopied ? "Copied!" : "Copy")
+                            }
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(BlipColors.accentGreen)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
 
-                ShareLink(item: statusPageURL) {
+                        ShareLink(item: statusPageURL) {
                     HStack(spacing: 4) {
                         Image(systemName: "square.and.arrow.up")
                         Text("Share")
@@ -330,7 +334,7 @@ struct MonitorDetailView: View {
                     Task {
                         try? await apiClient.sendStatusPagePush(
                             secret: secretManager.currentSecret,
-                            statusPageURL: statusPageURL
+                            statusPageURL: statusPageURL ?? ""
                         )
                         showSent = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -350,14 +354,16 @@ struct MonitorDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
+                }
+                .padding(16)
+                .background(BlipColors.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(BlipColors.cardBorder, lineWidth: 0.5)
+                )
+            }
         }
-        .padding(16)
-        .background(BlipColors.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(BlipColors.cardBorder, lineWidth: 0.5)
-        )
     }
 
     // MARK: - Incidents
@@ -556,6 +562,7 @@ struct MonitorDetailView: View {
         stats = try? await statsTask
         checks = (try? await checksTask) ?? []
         incidents = (try? await incidentsTask) ?? []
+        statusToken = try? await apiClient.statusToken(secret: secretManager.currentSecret)
         isLoading = false
     }
 }

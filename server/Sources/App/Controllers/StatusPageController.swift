@@ -3,17 +3,17 @@ import Fluent
 
 struct StatusPageController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
-        routes.get("status", ":secret", use: statusPage)
+        routes.get("status", ":token", use: statusPage)
     }
 
     @Sendable
     func statusPage(req: Request) async throws -> Response {
-        guard let secret = req.parameters.get("secret") else {
+        guard let token = req.parameters.get("token") else {
             throw Abort(.badRequest)
         }
 
         guard let user = try await User.query(on: req.db)
-            .filter(\.$secret == secret)
+            .filter(\.$statusToken == token)
             .first()
         else {
             throw Abort(.notFound, reason: "Status page not found.")

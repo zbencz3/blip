@@ -593,7 +593,7 @@ struct StatusPageTests {
         monitor.lastCheckedAt = Date()
         try await monitor.save(on: app.db)
 
-        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+        try await app.test(.GET, "status/\(user.statusToken!)", afterResponse: { res async in
             #expect(res.status == .ok)
             let body = res.body.string
             #expect(body.contains("My API"))
@@ -617,7 +617,7 @@ struct StatusPageTests {
         let down = Monitor(userID: user.id!, name: "Broken", url: "https://down.com", interval: 60, status: "down")
         try await down.save(on: app.db)
 
-        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+        try await app.test(.GET, "status/\(user.statusToken!)", afterResponse: { res async in
             #expect(res.status == .ok)
             let body = res.body.string
             #expect(body.contains("DEGRADED"))
@@ -640,7 +640,7 @@ struct StatusPageTests {
         let paused = Monitor(userID: user.id!, name: "Paused One", url: "https://paused.com", interval: 60, status: "paused")
         try await paused.save(on: app.db)
 
-        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+        try await app.test(.GET, "status/\(user.statusToken!)", afterResponse: { res async in
             let body = res.body.string
             #expect(body.contains("Active"))
             #expect(!body.contains("Paused One"))
@@ -675,7 +675,7 @@ struct StatusPageTests {
             try await check.save(on: app.db)
         }
 
-        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+        try await app.test(.GET, "status/\(user.statusToken!)", afterResponse: { res async in
             let body = res.body.string
             #expect(body.contains("100.0%"))
             #expect(body.contains("150ms"))
@@ -694,7 +694,7 @@ struct StatusPageTests {
         let monitor = Monitor(userID: user.id!, name: "<script>alert(1)</script>", url: "https://xss.com", interval: 60, status: "up")
         try await monitor.save(on: app.db)
 
-        try await app.test(.GET, "status/\(secret)", afterResponse: { res async in
+        try await app.test(.GET, "status/\(user.statusToken!)", afterResponse: { res async in
             let body = res.body.string
             #expect(!body.contains("<script>"))
             #expect(body.contains("&lt;script&gt;"))

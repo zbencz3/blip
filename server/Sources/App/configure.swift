@@ -15,6 +15,7 @@ func configure(_ app: Application) async throws {
     app.migrations.add(CreatePendingResponse())
     app.migrations.add(CreateMonitor())
     app.migrations.add(CreateMonitorCheck())
+    app.migrations.add(AddStatusToken())
     try await app.autoMigrate()
 
     configureAPNs(app)

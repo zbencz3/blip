@@ -283,6 +283,15 @@ struct APIClient {
         request.httpBody = try JSONEncoder().encode(["paused": paused])
         return try await perform(request)
     }
+
+    // MARK: - Status Token
+
+    func statusToken(secret: String) async throws -> String {
+        var request = makeRequest(path: "status-token", method: "GET")
+        request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
+        let response: [String: String] = try await perform(request)
+        return response["status_token"] ?? ""
+    }
 }
 
 enum APIError: Error, LocalizedError {

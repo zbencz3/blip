@@ -76,13 +76,17 @@ class NotificationService: UNNotificationServiceExtension {
             intentIdentifiers: []
         )
 
-        // Register all categories, then deliver
+        // Merge with existing categories, then deliver
         let center = UNUserNotificationCenter.current()
-        center.setNotificationCategories([generalCategory, urlCategory, dynamicCategory])
+        let staticCategories: Set<UNNotificationCategory> = [generalCategory, urlCategory, dynamicCategory]
+        center.getNotificationCategories { existing in
+            let merged = existing.union(staticCategories)
+            center.setNotificationCategories(merged)
 
-        // Give the system a moment to register the category
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) {
-            contentHandler(content)
+            // Give the system a moment to register the category
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) {
+                contentHandler(content)
+            }
         }
     }
 

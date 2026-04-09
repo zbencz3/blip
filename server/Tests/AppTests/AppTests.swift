@@ -12,6 +12,7 @@ func makeTestApp() async throws -> Application {
     app.migrations.add(CreatePendingResponse())
     app.migrations.add(CreateMonitor())
     app.migrations.add(CreateMonitorCheck())
+    // AddStatusToken not needed in tests — CreateUser already includes status_token column
     try await app.autoMigrate()
     app.apnsServiceCustom = MockAPNsService()
     try routes(app)
