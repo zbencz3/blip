@@ -11,6 +11,7 @@ struct HomeView: View {
     @State private var showTemplates = false
     @State private var showSubscription = false
     @State private var showUseCases = false
+    @State private var showMonitors = false
     @State private var statusOn = true
     @State private var startupPlayer: AVAudioPlayer?
     @State private var hasPlayedStartup = false
@@ -169,6 +170,9 @@ struct HomeView: View {
 
                     // Features row — tappable
                     HStack(spacing: 12) {
+                        Button { showMonitors = true } label: {
+                            featurePill(icon: "chart.bar.fill", text: "Monitors")
+                        }
                         Button { showQRCode = true } label: {
                             featurePill(icon: "qrcode", text: "QR Code")
                         }
@@ -207,6 +211,9 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showUseCases) {
             UseCasesView()
+        }
+        .sheet(isPresented: $showMonitors) {
+            MonitorsView(secretManager: viewModel.secretManager, apiClient: viewModel.apiClient)
         }
         .sheet(isPresented: $showSubscription) {
             NavigationStack {

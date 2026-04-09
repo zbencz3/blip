@@ -17,28 +17,17 @@ struct KeychainService {
     func save(_ value: String, for key: String) throws {
         let data = Data(value.utf8)
 
-        // Try to update first
-        let updateQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key
-        ]
-        let updateAttributes: [String: Any] = [
-            kSecValueData as String: data
-        ]
-        let updateStatus = SecItemUpdate(updateQuery as CFDictionary, updateAttributes as CFDictionary)
+        // Delete any existing item (both local-only and synced) to avoid conflicts
+        delete(key: key)
 
-        if updateStatus == errSecSuccess {
-            return
-        }
-
-        // If not found, add new
+        // Save with iCloud Keychain sync enabled
         let addQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+            kSecAttrSynchronizable as String: true
         ]
         let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
         guard addStatus == errSecSuccess else {
@@ -47,12 +36,14 @@ struct KeychainService {
     }
 
     func load(key: String) -> String? {
+        // Search both synced and local items
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
+            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecAttrSynchronizable as String: kSecAttrSynchronizableAny
         ]
 
         var result: AnyObject?
@@ -64,11 +55,46 @@ struct KeychainService {
     }
 
     func delete(key: String) {
-        let query: [String: Any] = [
+        // Delete local-only items
+        let localQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: key
+            kSecAttrAccount as String: key,
+            kSecAttrSynchronizable as String: false
         ]
-        SecItemDelete(query as CFDictionary)
+        SecItemDelete(localQuery as CFDictionary)
+
+        // Delete synced items
+        let syncQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecAttrSynchronizable as String: true
+        ]
+        SecItemDelete(syncQuery as CFDictionary)
+    }
+
+    /// Migrate old local-only keychain items to iCloud-synced items.
+    /// Call once on app launch.
+    func migrateToSynced(key: String) {
+        // Check if a local-only item exists
+        let localQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecAttrSynchronizable as String: false
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(localQuery as CFDictionary, &result)
+        guard status == errSecSuccess, let data = result as? Data,
+              let value = String(data: data, encoding: .utf8) else {
+            return // No local-only item to migrate
+        }
+
+        // Re-save as synced (save() handles delete + add)
+        try? save(value, for: key)
     }
 }

@@ -16,6 +16,8 @@ struct SettingsView: View {
     @State private var showSubscription = false
     @State private var showAbout = false
     @State private var showTemplates = false
+    @State private var showMonitors = false
+    @State private var showLinkDevice = false
 
     var body: some View {
         NavigationStack {
@@ -37,13 +39,35 @@ struct SettingsView: View {
                             }
                         }
 
-                        // Webhooks
+                        // Webhooks & Monitors
                         SettingsSectionCard {
                             Button { showWebhooks = true } label: {
                                 SettingsRow(
                                     icon: "bolt.fill",
                                     iconColor: .blue,
                                     title: "Webhooks",
+                                    showChevron: true
+                                )
+                            }
+                            Divider().background(BlipColors.cardBorder)
+                            Button { showMonitors = true } label: {
+                                SettingsRow(
+                                    icon: "chart.bar.fill",
+                                    iconColor: .green,
+                                    title: "Monitors",
+                                    showChevron: true
+                                )
+                            }
+                        }
+
+                        // Link Device
+                        SettingsSectionCard {
+                            Button { showLinkDevice = true } label: {
+                                SettingsRow(
+                                    icon: "link.circle.fill",
+                                    iconColor: BlipColors.accentPurple,
+                                    title: "Link Device",
+                                    subtitle: "Use Bzap on iPhone + iPad",
                                     showChevron: true
                                 )
                             }
@@ -181,6 +205,12 @@ struct SettingsView: View {
             }
             .navigationDestination(isPresented: $showTemplates) {
                 TemplatesView(secretManager: secretManager)
+            }
+            .sheet(isPresented: $showMonitors) {
+                MonitorsView(secretManager: secretManager, apiClient: apiClient)
+            }
+            .sheet(isPresented: $showLinkDevice) {
+                LinkDeviceView(secretManager: secretManager, apiClient: apiClient)
             }
         }
         .preferredColorScheme(.dark)

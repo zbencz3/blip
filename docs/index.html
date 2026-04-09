@@ -310,6 +310,9 @@
         <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/devices</span><span class="desc">List devices</span></div>
         <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/v1/devices/{id}</span><span class="desc">Unregister</span></div>
         <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/secret/rotate</span><span class="desc">Rotate secret</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="path">/v1/responses/{id}</span><span class="desc">Submit response</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="path">/v1/responses/{id}</span><span class="desc">Poll response</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="path">/status/{secret}</span><span class="desc">Public status page</span></div>
 
         <h3 style="margin-top: 40px; font-family: var(--mono); font-size: 1rem;">Payload Fields</h3>
         <div class="table-wrap">
@@ -359,6 +362,174 @@
 
 <span class="response">{"message":"Notification sent"}</span></pre>
         </div>
+
+        <h3 style="margin-top: 40px; font-family: var(--mono); font-size: 1rem;">Response Channel</h3>
+        <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 16px;">Two-way communication. Send a notification, get an answer back. Add <code style="color: var(--code);">response_channel: true</code> to any action to enable polling for the user's response.</p>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">1. Approve / Reject Buttons</h4>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">Ask a yes/no question. The response includes which button was tapped.</p>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">approve-reject.sh</span>
+            </div>
+            <pre><span class="prompt"># Step 1: Send notification with response_channel actions</span>
+<span class="prompt">$</span> <span class="cmd">curl -s -X POST</span> <span class="url">https://bzap-server.fly.dev/v1/your_secret</span> \
+  <span class="cmd">-H</span> <span class="str">'Content-Type: application/json'</span> \
+  <span class="cmd">-d</span> <span class="str">'{
+    "title": "Deploy to Production?",
+    "message": "v2.3.1 — all tests passing",
+    "actions": [
+      {"id": "approve", "label": "Approve", "response_channel": true},
+      {"id": "reject", "label": "Reject", "destructive": true, "response_channel": true}
+    ]
+  }'</span>
+
+<span class="response">{"message":"Notification sent","response_id":"abc-123"}</span>
+
+<span class="prompt"># Step 2: Poll for the user's response (Bearer auth)</span>
+<span class="prompt">$</span> <span class="cmd">curl -s</span> <span class="url">https://bzap-server.fly.dev/v1/responses/abc-123</span> \
+  <span class="cmd">-H</span> <span class="str">'Authorization: Bearer your_secret'</span>
+
+<span class="response"># While waiting:</span>
+<span class="response">HTTP 202 {"status":"pending"}</span>
+
+<span class="response"># After user taps a button:</span>
+<span class="response">HTTP 200 {"status":"responded","action_id":"approve","device_name":"iPhone"}</span></pre>
+        </div>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">2. Custom Choice Buttons</h4>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">Up to 4 custom buttons. Each has its own <code style="color: var(--code);">id</code> returned in the response.</p>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">custom-buttons.sh</span>
+            </div>
+            <pre><span class="prompt">$</span> <span class="cmd">curl -s -X POST</span> <span class="url">https://bzap-server.fly.dev/v1/your_secret</span> \
+  <span class="cmd">-H</span> <span class="str">'Content-Type: application/json'</span> \
+  <span class="cmd">-d</span> <span class="str">'{
+    "title": "Which environment?",
+    "message": "Ready to deploy feature-login",
+    "actions": [
+      {"id": "staging", "label": "Staging", "response_channel": true},
+      {"id": "production", "label": "Production", "response_channel": true},
+      {"id": "cancel", "label": "Cancel", "destructive": true, "response_channel": true}
+    ]
+  }'</span>
+
+<span class="response">{"message":"Notification sent","response_id":"def-456"}</span>
+
+<span class="prompt"># Poll → user taps "Production"</span>
+<span class="response">{"status":"responded","action_id":"production","device_name":"iPad"}</span></pre>
+        </div>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">3. Free Text Input</h4>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">Ask the user to type a response. Set <code style="color: var(--code);">type: "text_input"</code> to show a text field when the button is tapped.</p>
+        <div class="terminal" style="max-width: 640px;">
+            <div class="terminal-bar">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">text-input.sh</span>
+            </div>
+            <pre><span class="prompt">$</span> <span class="cmd">curl -s -X POST</span> <span class="url">https://bzap-server.fly.dev/v1/your_secret</span> \
+  <span class="cmd">-H</span> <span class="str">'Content-Type: application/json'</span> \
+  <span class="cmd">-d</span> <span class="str">'{
+    "title": "What branch?",
+    "message": "Which branch should I deploy?",
+    "actions": [
+      {
+        "id": "reply",
+        "label": "Reply",
+        "type": "text_input",
+        "text_input_placeholder": "Branch name...",
+        "response_channel": true
+      }
+    ]
+  }'</span>
+
+<span class="response">{"message":"Notification sent","response_id":"ghi-789"}</span>
+
+<span class="prompt"># Poll → user types "feature/login-v2"</span>
+<span class="response">{"status":"responded","action_id":"reply","text":"feature/login-v2","device_name":"iPhone"}</span></pre>
+        </div>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">How It Works</h4>
+        <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 16px;">
+            <p>1. Send a notification with <code style="color: var(--code);">response_channel: true</code> on one or more actions.</p>
+            <p>2. The server returns a <code style="color: var(--code);">response_id</code> — your ticket to poll for the answer.</p>
+            <p>3. Poll <code style="color: var(--code);">GET /v1/responses/{response_id}</code> with Bearer auth.</p>
+            <p style="margin-left: 16px;">→ <code style="color: var(--code);">202</code> while waiting</p>
+            <p style="margin-left: 16px;">→ <code style="color: var(--code);">200</code> with the response (one-time read, then deleted)</p>
+            <p style="margin-left: 16px;">→ <code style="color: var(--code);">404</code> if expired (5 min TTL)</p>
+            <p>4. Responses are one-time-read — after you get a 200, the row is deleted.</p>
+            <p>5. Actions can have <strong>both</strong> <code style="color: var(--code);">webhook</code> and <code style="color: var(--code);">response_channel</code> — the webhook fires immediately, and you can still poll.</p>
+        </div>
+
+        <h4 style="margin-top: 24px; font-family: var(--mono); font-size: 0.85rem; color: var(--green);">Action Fields</h4>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>id</code></td><td>string</td><td>Unique action identifier (returned in response)</td></tr>
+                <tr><td><code>label</code></td><td>string</td><td>Button label shown to user</td></tr>
+                <tr><td><code>webhook</code></td><td>string</td><td>URL to POST when tapped (optional)</td></tr>
+                <tr><td><code>destructive</code></td><td>bool</td><td>Show button in red (optional)</td></tr>
+                <tr><td><code>response_channel</code></td><td>bool</td><td>Enable polling for this action's response</td></tr>
+                <tr><td><code>type</code></td><td>string</td><td><code>"text_input"</code> to show a text field</td></tr>
+                <tr><td><code>text_input_placeholder</code></td><td>string</td><td>Placeholder text for text input</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <!-- Multi-Device -->
+    <section class="api" id="multi-device">
+        <div class="section-label">Multi-Device</div>
+        <h2 class="section-title">Use Bzap on Multiple Devices</h2>
+        <p class="section-subtitle">iPhone + iPad. Same account, same notifications.</p>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Automatic Sync (iCloud Keychain)</h3>
+        <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 24px;">
+            <p>Bzap automatically syncs your account secret via iCloud Keychain. If you install Bzap on a second device signed into the <strong style="color: var(--text);">same Apple ID</strong>, it should pick up your account automatically.</p>
+            <p style="margin-top: 8px;"><strong style="color: var(--text);">Note:</strong> iCloud Keychain sync is not instant — it can take anywhere from a few seconds to several minutes depending on network conditions and iCloud sync status. If your second device generates a new account instead of finding your existing one, use the Link Device flow below.</p>
+        </div>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Link Device (QR Code)</h3>
+        <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 16px;">
+            <p>If iCloud sync hasn't kicked in yet, or your devices use different Apple IDs, you can link manually:</p>
+        </div>
+        <div style="color: var(--muted); font-size: 0.85rem; line-height: 2; margin-bottom: 24px;">
+            <p><strong style="color: var(--green);">On your existing device</strong> (the one that already has your account):</p>
+            <p style="margin-left: 16px;">Settings → Link Device → <strong style="color: var(--text);">Show QR Code</strong></p>
+            <p style="margin-top: 12px;"><strong style="color: var(--green);">On your new device:</strong></p>
+            <p style="margin-left: 16px;">Settings → Link Device → <strong style="color: var(--text);">Scan QR Code</strong></p>
+            <p style="margin-top: 12px;">The new device imports your account secret and registers itself with the server. Both devices will receive notifications from all your webhooks.</p>
+        </div>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">How It Works</h3>
+        <div style="color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin-bottom: 16px;">
+            <p>Bzap uses a <strong style="color: var(--text);">secret</strong> as your account identifier — no email, no password. Every device with the same secret is part of the same account. When a notification is sent to your webhook, the server pushes it to <strong style="color: var(--text);">all registered devices</strong>.</p>
+            <p style="margin-top: 8px;">Subscriptions are tied to your Apple ID via StoreKit, so they work across all your devices automatically — no extra steps needed.</p>
+        </div>
+
+        <h3 style="margin-top: 32px; font-family: var(--mono); font-size: 1rem;">Troubleshooting</h3>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Issue</th><th>Solution</th></tr></thead>
+            <tbody>
+                <tr><td>New device doesn't see my monitors</td><td>Use Link Device → Scan QR from your existing device</td></tr>
+                <tr><td>iCloud sync didn't work</td><td>Check Settings → Apple ID → iCloud → Passwords & Keychain is enabled on both devices</td></tr>
+                <tr><td>Different Apple IDs on devices</td><td>Use the QR code flow — it works across any Apple ID</td></tr>
+                <tr><td>Subscription not showing on second device</td><td>Tap Restore Subscription on the Subscription page</td></tr>
+                <tr><td>Notifications only on one device</td><td>Make sure push notifications are enabled in system settings on both devices</td></tr>
+            </tbody>
+        </table>
+        </div>
     </section>
 
     <!-- CTA -->
@@ -372,7 +543,7 @@
 
 <footer>
     <div class="container">
-        <span style="font-family: var(--mono);">bzap</span> by <a href="https://github.com/isylva">iSylva</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="#docs">API</a> &middot; <a href="mailto:support@isylva.com">Support</a>
+        <span style="font-family: var(--mono);">bzap</span> by <a href="https://github.com/isylva">iSylva</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="#docs">API</a> &middot; <a href="#multi-device">Multi-Device</a> &middot; <a href="mailto:support@isylva.com">Support</a>
     </div>
 </footer>
 

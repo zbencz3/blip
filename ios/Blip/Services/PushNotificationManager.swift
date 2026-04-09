@@ -36,6 +36,7 @@ final class PushNotificationManager: NSObject {
         let token = tokenData.map { String(format: "%02x", $0) }.joined()
         self.deviceToken = token
         self.isRegistered = true
+        UserDefaults.standard.set(token, forKey: "device_token")
     }
 
     func handleRegistrationError(_ error: Error) {

@@ -17,6 +17,10 @@ final class SecretManager {
 
     init(keychain: KeychainService = KeychainService()) {
         self.keychain = keychain
+
+        // Migrate old local-only keychain items to iCloud-synced
+        keychain.migrateToSynced(key: Constants.Keychain.secretKey)
+
         if let existing = keychain.load(key: Constants.Keychain.secretKey) {
             self.currentSecret = existing
         } else {
@@ -28,6 +32,10 @@ final class SecretManager {
             }
             self.currentSecret = secret
         }
+    }
+
+    func updateSecret(_ secret: String) {
+        currentSecret = secret
     }
 
     func rotate(using apiClient: APIClient) async throws {
