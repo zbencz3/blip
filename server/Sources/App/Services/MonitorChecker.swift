@@ -82,7 +82,7 @@ struct MonitorChecker {
                 statusCode: statusCode,
                 responseTimeMs: responseTimeMs,
                 error: errorMessage,
-                status: monitor.status == "up" ? "up" : "down"
+                status: errorMessage == nil ? "up" : "down"
             )
             do {
                 try await check.save(on: app.db)

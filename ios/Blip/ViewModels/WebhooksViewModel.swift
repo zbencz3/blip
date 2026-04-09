@@ -39,6 +39,7 @@ final class WebhooksViewModel {
     func loadDevices() async {
         isLoading = true
         defer { isLoading = false }
+        currentDeviceToken = UserDefaults.standard.string(forKey: "device_token")
         do {
             devices = try await apiClient.listDevices(secret: secretManager.currentSecret)
         } catch {}

@@ -41,7 +41,7 @@ struct RecentNotificationsView: View {
                             VStack(spacing: 0) {
                                 ForEach(section.notifications) { notification in
                                     NotificationRow(notification: notification)
-                                        .swipeActions(edge: .trailing) {
+                                        .contextMenu {
                                             Button(role: .destructive) {
                                                 withAnimation {
                                                     viewModel.delete(notification)

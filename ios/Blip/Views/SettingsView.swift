@@ -198,7 +198,7 @@ struct SettingsView: View {
                 WebhooksView(secretManager: secretManager, apiClient: apiClient)
             }
             .navigationDestination(isPresented: $showSubscription) {
-                SubscriptionView()
+                SubscriptionView(trialManager: trialManager)
             }
             .navigationDestination(isPresented: $showAbout) {
                 AboutView()

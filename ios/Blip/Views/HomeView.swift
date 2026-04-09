@@ -76,7 +76,7 @@ struct HomeView: View {
                     .padding(.vertical, 6)
                     .background(Color.green.opacity(0.1))
                     .clipShape(Capsule())
-                    .onAppear { startStatusLoop() }
+                    .task { await statusLoop() }
 
                     // Curl snippet
                     VStack(alignment: .leading, spacing: 8) {
@@ -236,14 +236,12 @@ struct HomeView: View {
         }
     }
 
-    private func startStatusLoop() {
-        Task {
-            while true {
-                try? await Task.sleep(for: .milliseconds(800))
-                statusOn = false
-                try? await Task.sleep(for: .milliseconds(400))
-                statusOn = true
-            }
+    private func statusLoop() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(800))
+            statusOn = false
+            try? await Task.sleep(for: .milliseconds(400))
+            statusOn = true
         }
     }
 

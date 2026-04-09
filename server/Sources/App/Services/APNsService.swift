@@ -61,7 +61,7 @@ struct LiveAPNsService: APNsServiceProtocol {
             sound: sound,
             threadID: payload.threadId,
             category: category,
-            mutableContent: blipActions != nil ? 1.0 : nil,
+            mutableContent: (blipActions != nil || payload.imageUrl != nil) ? 1.0 : nil,
             interruptionLevel: interruptionLevel
         )
 

@@ -247,7 +247,7 @@ struct APIClient {
     }
 
     struct MonitorCheckResponse: Codable, Identifiable {
-        var id: Date? { checkedAt }
+        var id: String { "\(checkedAt?.timeIntervalSince1970 ?? 0)-\(responseTimeMs)" }
         let responseTimeMs: Int
         let status: String
         let checkedAt: Date?
