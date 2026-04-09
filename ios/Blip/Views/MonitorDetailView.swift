@@ -33,8 +33,9 @@ struct MonitorDetailView: View {
                     VStack(spacing: 16) {
                         statusHeader
                         uptimeCard
-                        if !checks.isEmpty { responseTimeChart }
-                        responseTimeCard
+                        if monitor.isHeartbeat { heartbeatPingCard }
+                        if !monitor.isHeartbeat && !checks.isEmpty { responseTimeChart }
+                        if !monitor.isHeartbeat { responseTimeCard }
                         statusPageCard
                         incidentsCard
                         detailsCard
@@ -252,6 +253,81 @@ struct MonitorDetailView: View {
         )
     }
 
+    // MARK: - Heartbeat Ping Card
+
+    private var heartbeatPingCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("PING URL")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundStyle(BlipColors.textSecondary)
+
+            Text("Your service should POST or GET this URL at the expected interval.")
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(BlipColors.textSecondary.opacity(0.6))
+
+            if let heartbeatUrl = monitor.heartbeatUrl {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    Text(heartbeatUrl)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(BlipColors.accentGreen)
+                        .textSelection(.enabled)
+                }
+
+                // Curl snippet
+                Text("curl -X POST \(heartbeatUrl)")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(BlipColors.textCode)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(BlipColors.background)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                HStack(spacing: 10) {
+                    Button {
+                        #if canImport(UIKit)
+                        UIPasteboard.general.string = heartbeatUrl
+                        #endif
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "doc.on.doc")
+                            Text("Copy URL")
+                        }
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(BlipColors.accentGreen)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+
+                    Button {
+                        #if canImport(UIKit)
+                        UIPasteboard.general.string = "curl -X POST \(heartbeatUrl)"
+                        #endif
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "terminal")
+                            Text("Copy curl")
+                        }
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(BlipColors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(BlipColors.cardBorder, lineWidth: 0.5)
+        )
+    }
+
     // MARK: - Response Time Stats
 
     private var responseTimeCard: some View {
@@ -456,9 +532,21 @@ struct MonitorDetailView: View {
                 .padding(.vertical, 12)
             }
             Divider().background(BlipColors.cardBorder)
-            detailRow(label: "INTERVAL", value: "\(monitor.interval / 60) min")
+            detailRow(label: "TYPE", value: monitor.isHeartbeat ? "Heartbeat" : "HTTP \(monitor.method)")
             Divider().background(BlipColors.cardBorder)
-            detailRow(label: "LAST CHECK", value: lastCheckedText)
+            detailRow(label: monitor.isHeartbeat ? "EXPECTED INTERVAL" : "CHECK INTERVAL", value: "\(monitor.interval / 60) min")
+            if monitor.isHeartbeat, let grace = monitor.gracePeriod {
+                Divider().background(BlipColors.cardBorder)
+                detailRow(label: "GRACE PERIOD", value: "\(grace / 60) min")
+            }
+            if let keyword = monitor.keyword, !keyword.isEmpty {
+                Divider().background(BlipColors.cardBorder)
+                detailRow(label: "KEYWORD", value: "\(monitor.keywordShouldExist ? "contains" : "excludes") \"\(keyword)\"")
+            }
+            Divider().background(BlipColors.cardBorder)
+            detailRow(label: monitor.isHeartbeat ? "LAST PING" : "LAST CHECK", value: lastCheckedText)
+            Divider().background(BlipColors.cardBorder)
+            detailRow(label: "ALERT AFTER", value: "\(monitor.failureThreshold) failure\(monitor.failureThreshold == 1 ? "" : "s")")
             Divider().background(BlipColors.cardBorder)
             detailRow(label: "FAILURES", value: "\(monitor.consecutiveFailures)")
             Divider().background(BlipColors.cardBorder)

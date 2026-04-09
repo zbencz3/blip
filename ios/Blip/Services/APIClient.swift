@@ -165,13 +165,30 @@ struct APIClient {
         let lastCheckedAt: Date?
         let lastStatusChange: Date?
         let consecutiveFailures: Int
+        let type: String
+        let method: String
+        let keyword: String?
+        let keywordShouldExist: Bool
+        let failureThreshold: Int
+        let gracePeriod: Int?
+        let heartbeatToken: String?
+        let heartbeatUrl: String?
+        let sslAlertDays: Int
         let createdAt: Date
 
+        var isHeartbeat: Bool { type == "heartbeat" }
+
         enum CodingKeys: String, CodingKey {
-            case id, name, url, interval, status
+            case id, name, url, interval, status, type, method, keyword
             case lastCheckedAt = "last_checked_at"
             case lastStatusChange = "last_status_change"
             case consecutiveFailures = "consecutive_failures"
+            case keywordShouldExist = "keyword_should_exist"
+            case failureThreshold = "failure_threshold"
+            case gracePeriod = "grace_period"
+            case heartbeatToken = "heartbeat_token"
+            case heartbeatUrl = "heartbeat_url"
+            case sslAlertDays = "ssl_alert_days"
             case createdAt = "created_at"
         }
     }
@@ -184,14 +201,49 @@ struct APIClient {
 
     private struct CreateMonitorBody: Encodable {
         let name: String
-        let url: String
+        let url: String?
         let interval: Int
+        let type: String?
+        let method: String?
+        let keyword: String?
+        let keywordShouldExist: Bool?
+        let failureThreshold: Int?
+        let gracePeriod: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case name, url, interval, type, method, keyword
+            case keywordShouldExist = "keyword_should_exist"
+            case failureThreshold = "failure_threshold"
+            case gracePeriod = "grace_period"
+        }
     }
 
-    func createMonitor(secret: String, name: String, url: String, interval: Int) async throws -> MonitorResponse {
+    struct CreateMonitorParams {
+        let name: String
+        let url: String?
+        let interval: Int
+        var type: String = "http"
+        var method: String = "HEAD"
+        var keyword: String?
+        var keywordShouldExist: Bool = true
+        var failureThreshold: Int = 3
+        var gracePeriod: Int?
+    }
+
+    func createMonitor(secret: String, params: CreateMonitorParams) async throws -> MonitorResponse {
         var request = makeRequest(path: "monitors", method: "POST")
         request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONEncoder().encode(CreateMonitorBody(name: name, url: url, interval: interval))
+        request.httpBody = try JSONEncoder().encode(CreateMonitorBody(
+            name: params.name,
+            url: params.url,
+            interval: params.interval,
+            type: params.type,
+            method: params.method,
+            keyword: params.keyword?.isEmpty == true ? nil : params.keyword,
+            keywordShouldExist: params.keyword != nil ? params.keywordShouldExist : nil,
+            failureThreshold: params.failureThreshold,
+            gracePeriod: params.gracePeriod
+        ))
         return try await perform(request)
     }
 
@@ -205,10 +257,37 @@ struct APIClient {
         }
     }
 
-    func updateMonitor(secret: String, monitorId: UUID, name: String, url: String, interval: Int) async throws -> MonitorResponse {
+    private struct UpdateMonitorBody: Encodable {
+        let name: String?
+        let url: String?
+        let interval: Int?
+        let method: String?
+        let keyword: String?
+        let keywordShouldExist: Bool?
+        let failureThreshold: Int?
+        let gracePeriod: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case name, url, interval, method, keyword
+            case keywordShouldExist = "keyword_should_exist"
+            case failureThreshold = "failure_threshold"
+            case gracePeriod = "grace_period"
+        }
+    }
+
+    func updateMonitor(secret: String, monitorId: UUID, params: CreateMonitorParams) async throws -> MonitorResponse {
         var request = makeRequest(path: "monitors/\(monitorId)", method: "PATCH")
         request.setValue("Bearer \(secret)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONEncoder().encode(CreateMonitorBody(name: name, url: url, interval: interval))
+        request.httpBody = try JSONEncoder().encode(UpdateMonitorBody(
+            name: params.name,
+            url: params.type == "http" ? params.url : nil,
+            interval: params.interval,
+            method: params.type == "http" ? params.method : nil,
+            keyword: params.keyword?.isEmpty == true ? nil : params.keyword,
+            keywordShouldExist: params.keyword != nil ? params.keywordShouldExist : nil,
+            failureThreshold: params.failureThreshold,
+            gracePeriod: params.gracePeriod
+        ))
         return try await perform(request)
     }
 

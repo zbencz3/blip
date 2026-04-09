@@ -30,13 +30,11 @@ final class MonitorsViewModel {
         }
     }
 
-    func create(name: String, url: String, interval: Int) async {
+    func create(params: APIClient.CreateMonitorParams) async {
         do {
             let monitor = try await apiClient.createMonitor(
                 secret: secretManager.currentSecret,
-                name: name,
-                url: url,
-                interval: interval
+                params: params
             )
             monitors.append(monitor)
             error = nil

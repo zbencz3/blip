@@ -42,8 +42,8 @@ struct MonitorsView: View {
             .task { await viewModel.load() }
             .refreshable { await viewModel.refresh() }
             .sheet(isPresented: $showAddMonitor) {
-                AddMonitorSheet { name, url, interval in
-                    await viewModel.create(name: name, url: url, interval: interval)
+                AddMonitorSheet { params in
+                    await viewModel.create(params: params)
                 }
                 .presentationBackground(BlipColors.background)
             }
@@ -174,18 +174,25 @@ private struct MonitorCard: View {
             StatusDot(status: monitor.status)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(monitor.name)
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundStyle(monitor.status == "paused" ? BlipColors.textSecondary : BlipColors.textPrimary)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Image(systemName: monitor.isHeartbeat ? "heart.fill" : "globe")
+                        .font(.system(size: 10))
+                        .foregroundStyle(BlipColors.textSecondary.opacity(0.5))
+                    Text(monitor.name)
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .foregroundStyle(monitor.status == "paused" ? BlipColors.textSecondary : BlipColors.textPrimary)
+                        .lineLimit(1)
+                }
 
-                Text(monitor.url)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(BlipColors.textSecondary)
-                    .lineLimit(1)
+                if !monitor.isHeartbeat {
+                    Text(monitor.url)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(BlipColors.textSecondary)
+                        .lineLimit(1)
+                }
 
                 if let lastChecked = monitor.lastCheckedAt {
-                    Text("checked \(lastChecked, style: .relative) ago")
+                    Text("\(monitor.isHeartbeat ? "last ping" : "checked") \(lastChecked, style: .relative) ago")
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundStyle(BlipColors.textSecondary.opacity(0.6))
                 }
