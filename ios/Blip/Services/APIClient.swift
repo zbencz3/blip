@@ -174,7 +174,7 @@ struct APIClient {
         let heartbeatToken: String?
         let heartbeatUrl: String?
         let sslAlertDays: Int
-        let createdAt: Date
+        let createdAt: Date?
 
         var isHeartbeat: Bool { type == "heartbeat" }
 
@@ -283,8 +283,8 @@ struct APIClient {
             url: params.type == "http" ? params.url : nil,
             interval: params.interval,
             method: params.type == "http" ? params.method : nil,
-            keyword: params.keyword?.isEmpty == true ? nil : params.keyword,
-            keywordShouldExist: params.keyword != nil ? params.keywordShouldExist : nil,
+            keyword: params.keyword ?? "",
+            keywordShouldExist: params.keywordShouldExist,
             failureThreshold: params.failureThreshold,
             gracePeriod: params.gracePeriod
         ))

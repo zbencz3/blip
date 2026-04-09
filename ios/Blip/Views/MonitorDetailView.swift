@@ -629,10 +629,11 @@ struct MonitorDetailView: View {
     }
 
     private var createdText: String {
+        guard let date = monitor.createdAt else { return "—" }
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        return formatter.string(from: monitor.createdAt)
+        return formatter.string(from: date)
     }
 
     private func loadData() async {
