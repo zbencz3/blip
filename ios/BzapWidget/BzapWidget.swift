@@ -145,7 +145,7 @@ struct BzapWidgetEntryView: View {
     // MARK: Small — Up/Down counts
 
     private var smallWidget: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             HStack(spacing: 4) {
                 Image(systemName: "bolt.fill")
                     .font(.system(size: 14))
@@ -188,7 +188,7 @@ struct BzapWidgetEntryView: View {
     // MARK: Medium — Monitor list
 
     private var mediumWidget: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 HStack(spacing: 4) {
                     Image(systemName: "bolt.fill")
@@ -279,5 +279,6 @@ struct BzapWidget: Widget {
         .configurationDisplayName("Monitors")
         .description("Monitor uptime at a glance.")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
     }
 }
