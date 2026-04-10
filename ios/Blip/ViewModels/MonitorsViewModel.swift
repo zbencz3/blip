@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 @MainActor
 @Observable
@@ -38,6 +39,7 @@ final class MonitorsViewModel {
             )
             monitors.append(monitor)
             error = nil
+            reloadWidget()
         } catch {
             self.error = error.localizedDescription
         }
@@ -50,6 +52,7 @@ final class MonitorsViewModel {
                 monitorId: monitor.id
             )
             monitors.removeAll { $0.id == monitor.id }
+            reloadWidget()
         } catch {
             self.error = error.localizedDescription
         }
@@ -66,6 +69,7 @@ final class MonitorsViewModel {
             if let index = monitors.firstIndex(where: { $0.id == monitor.id }) {
                 monitors[index] = updated
             }
+            reloadWidget()
         } catch {
             self.error = error.localizedDescription
         }
@@ -73,5 +77,10 @@ final class MonitorsViewModel {
 
     func refresh() async {
         await load()
+        reloadWidget()
+    }
+
+    private func reloadWidget() {
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
