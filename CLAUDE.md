@@ -1,5 +1,16 @@
 # CLAUDE.md — brr (brrr clone)
 
+## Infrastructure Safety
+
+**NEVER destroy or scale down Fly.io machines without checking which one has user data first.** SQLite is file-based — each machine has its own volume. Destroying the wrong machine = permanent data loss.
+
+Before ANY infrastructure change:
+1. SSH in and verify which machine has data: `fly ssh console -a bzap-server -C "ls -la /data/"`
+2. Back up the DB: `fly ssh sftp get /data/db.sqlite backup.sqlite`
+3. Only then proceed with the change
+
+We run 1 machine only. Never scale to 2 with SQLite — it causes split-brain (two separate DBs).
+
 ## File Access
 
 Only read/write files within this project directory (`/Users/zsolt/Developer/claude/brr/`). Do not access files outside this directory (no `~/Library`, no `~/Documents`, no other projects) unless explicitly asked by the user.
