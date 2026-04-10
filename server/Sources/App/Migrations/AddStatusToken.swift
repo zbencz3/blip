@@ -1,22 +1,27 @@
 import Fluent
+import SQLKit
 
 struct AddStatusToken: AsyncMigration {
     func prepare(on database: Database) async throws {
-        try await database.schema("users")
-            .field("status_token", .string)
-            .update()
+        guard let sql = database as? SQLDatabase else { return }
 
-        // Generate tokens for existing users
-        let users = try await User.query(on: database).all()
-        for user in users {
-            user.statusToken = User.generateStatusToken()
-            try await user.save(on: database)
+        // Check if column already exists (CreateUser may have added it)
+        let columns = try await sql.raw("PRAGMA table_info(users)").all()
+        let existing = Set(columns.compactMap { try? $0.decode(column: "name", as: String.self) })
+
+        if !existing.contains("status_token") {
+            try await sql.raw("ALTER TABLE users ADD COLUMN status_token TEXT").run()
         }
+
+        // Generate tokens for existing users that don't have one
+        try await sql.raw("""
+            UPDATE users SET status_token = hex(randomblob(16))
+            WHERE status_token IS NULL
+        """).run()
     }
 
     func revert(on database: Database) async throws {
-        try await database.schema("users")
-            .deleteField("status_token")
-            .update()
+        guard let sql = database as? SQLDatabase else { return }
+        try? await sql.raw("ALTER TABLE users DROP COLUMN status_token").run()
     }
 }
