@@ -133,25 +133,44 @@ struct MonitorController: RouteCollection {
         let sevenDaysAgo = now.addingTimeInterval(-7 * 86400)
         let thirtyDaysAgo = now.addingTimeInterval(-30 * 86400)
 
-        let allChecks = try await MonitorCheck.query(on: req.db)
+        // Use counts instead of loading all check objects into memory
+        let totalCount30d = try await MonitorCheck.query(on: req.db)
             .filter(\.$monitor.$id == monitorID)
             .filter(\.$checkedAt >= thirtyDaysAgo)
-            .sort(\.$checkedAt, .descending)
+            .count()
+
+        let upCount30d = try await MonitorCheck.query(on: req.db)
+            .filter(\.$monitor.$id == monitorID)
+            .filter(\.$checkedAt >= thirtyDaysAgo)
+            .filter(\.$status == "up")
+            .count()
+
+        let totalCount7d = try await MonitorCheck.query(on: req.db)
+            .filter(\.$monitor.$id == monitorID)
+            .filter(\.$checkedAt >= sevenDaysAgo)
+            .count()
+
+        let upCount7d = try await MonitorCheck.query(on: req.db)
+            .filter(\.$monitor.$id == monitorID)
+            .filter(\.$checkedAt >= sevenDaysAgo)
+            .filter(\.$status == "up")
+            .count()
+
+        let uptime7d: Double? = totalCount7d == 0 ? nil : {
+            return (Double(upCount7d) / Double(totalCount7d)) * 100.0
+        }()
+
+        let uptime30d: Double? = totalCount30d == 0 ? nil : {
+            return (Double(upCount30d) / Double(totalCount30d)) * 100.0
+        }()
+
+        // Only load response times for successful checks (much smaller set for avg/min/max)
+        let responseTimes = try await MonitorCheck.query(on: req.db)
+            .filter(\.$monitor.$id == monitorID)
+            .filter(\.$checkedAt >= thirtyDaysAgo)
+            .filter(\.$status == "up")
             .all()
-
-        let checks7d = allChecks.filter { ($0.checkedAt ?? .distantPast) >= sevenDaysAgo }
-
-        let uptime7d: Double? = checks7d.isEmpty ? nil : {
-            let upCount = checks7d.filter { $0.status == "up" }.count
-            return (Double(upCount) / Double(checks7d.count)) * 100.0
-        }()
-
-        let uptime30d: Double? = allChecks.isEmpty ? nil : {
-            let upCount = allChecks.filter { $0.status == "up" }.count
-            return (Double(upCount) / Double(allChecks.count)) * 100.0
-        }()
-
-        let responseTimes = allChecks.filter { $0.status == "up" }.map(\.responseTimeMs)
+            .map(\.responseTimeMs)
 
         return MonitorStatsResponse(
             uptime7d: uptime7d.map { ($0 * 100).rounded() / 100 },
@@ -159,7 +178,7 @@ struct MonitorController: RouteCollection {
             avgResponseMs: responseTimes.isEmpty ? nil : responseTimes.reduce(0, +) / responseTimes.count,
             minResponseMs: responseTimes.min(),
             maxResponseMs: responseTimes.max(),
-            totalChecks: allChecks.count
+            totalChecks: totalCount30d
         )
     }
 
@@ -241,9 +260,12 @@ struct MonitorController: RouteCollection {
         let calendar = Calendar.current
         let ninetyDaysAgo = now.addingTimeInterval(-90 * 86400)
 
+        // Load only status + date (not full objects) to save memory
         let checks = try await MonitorCheck.query(on: req.db)
             .filter(\.$monitor.$id == monitorID)
             .filter(\.$checkedAt >= ninetyDaysAgo)
+            .field(\.$status)
+            .field(\.$checkedAt)
             .all()
 
         // Group by day

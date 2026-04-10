@@ -2,21 +2,24 @@ import Vapor
 import Foundation
 
 /// In-memory rate limiter: 60 requests per minute per secret.
-/// Thread-safe via an actor.
+/// Thread-safe via an actor. Periodically evicts stale buckets.
 actor RateLimitStore {
-    private var buckets: [String: [Date]] = [:]
+    private var buckets: [String: [TimeInterval]] = [:]
     private let limit: Int
     private let window: TimeInterval
+    private var lastCleanup: TimeInterval = 0
 
     init(limit: Int = 60, window: TimeInterval = 60) {
         self.limit = limit
         self.window = window
+        self.lastCleanup = Date().timeIntervalSince1970
     }
 
     /// Returns true if the request is allowed, false if rate limit exceeded.
     func allow(key: String) -> Bool {
-        let now = Date()
-        let cutoff = now.addingTimeInterval(-window)
+        let now = Date().timeIntervalSince1970
+        let cutoff = now - window
+
         var timestamps = buckets[key, default: []].filter { $0 > cutoff }
         guard timestamps.count < limit else {
             buckets[key] = timestamps
@@ -24,6 +27,13 @@ actor RateLimitStore {
         }
         timestamps.append(now)
         buckets[key] = timestamps
+
+        // Periodic cleanup: evict empty/stale buckets every 5 minutes
+        if now - lastCleanup > 300 {
+            lastCleanup = now
+            buckets = buckets.filter { !$0.value.isEmpty && $0.value.contains(where: { $0 > cutoff }) }
+        }
+
         return true
     }
 }

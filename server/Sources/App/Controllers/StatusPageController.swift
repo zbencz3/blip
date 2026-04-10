@@ -39,18 +39,24 @@ struct StatusPageController: RouteCollection {
         for monitor in monitors {
             guard let monitorID = monitor.id else { continue }
 
-            let checks = try await MonitorCheck.query(on: req.db)
+            let total7d = try await MonitorCheck.query(on: req.db)
+                .filter(\.$monitor.$id == monitorID)
+                .filter(\.$checkedAt >= sevenDaysAgo)
+                .count()
+            let up7d = try await MonitorCheck.query(on: req.db)
+                .filter(\.$monitor.$id == monitorID)
+                .filter(\.$checkedAt >= sevenDaysAgo)
+                .filter(\.$status == "up")
+                .count()
+            let uptime7d: String = total7d == 0 ? "—" : String(format: "%.1f%%", Double(up7d) / Double(total7d) * 100)
+
+            let responseTimes = try await MonitorCheck.query(on: req.db)
                 .filter(\.$monitor.$id == monitorID)
                 .filter(\.$checkedAt >= thirtyDaysAgo)
+                .filter(\.$status == "up")
+                .field(\.$responseTimeMs)
                 .all()
-
-            let checks7d = checks.filter { ($0.checkedAt ?? .distantPast) >= sevenDaysAgo }
-            let uptime7d: String = checks7d.isEmpty ? "—" : {
-                let pct = (Double(checks7d.filter { $0.status == "up" }.count) / Double(checks7d.count)) * 100
-                return String(format: "%.1f%%", pct)
-            }()
-
-            let responseTimes = checks.filter { $0.status == "up" }.map(\.responseTimeMs)
+                .map(\.responseTimeMs)
             let avgMs = responseTimes.isEmpty ? "—" : "\(responseTimes.reduce(0, +) / responseTimes.count)ms"
 
             let statusDot: String
