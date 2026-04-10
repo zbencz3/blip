@@ -45,13 +45,17 @@ func configure(_ app: Application) async throws {
         }
     }
 
-    // Cleanup old monitor checks: keep 30 days
+    // Cleanup old monitor checks: keep 30 days + WAL checkpoint
     app.eventLoopGroup.next().scheduleRepeatedTask(initialDelay: .seconds(120), delay: .seconds(3600)) { _ in
         Task {
             let cutoff = Date().addingTimeInterval(-30 * 86400)
             try? await MonitorCheck.query(on: app.db)
                 .filter(\.$checkedAt < cutoff)
                 .delete()
+            // Compact WAL file to prevent unbounded growth
+            if let sql = app.db as? SQLDatabase {
+                try? await sql.raw("PRAGMA wal_checkpoint(TRUNCATE)").run()
+            }
         }
     }
 

@@ -7,8 +7,14 @@ struct MonitorChecker {
     static func checkAll(app: Application) async {
         do {
             let now = Date()
+            // Filter due monitors in SQL: never checked OR last check + interval <= now
             let monitors = try await Monitor.query(on: app.db)
                 .filter(\.$status != "paused")
+                .group(.or) { group in
+                    group.filter(\.$lastCheckedAt == nil)
+                    // Use the minimum interval (60s) as cutoff — fine-grained filtering done below
+                    group.filter(\.$lastCheckedAt <= now.addingTimeInterval(-60))
+                }
                 .all()
 
             let dueMonitors = monitors.filter { monitor in

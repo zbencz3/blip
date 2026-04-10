@@ -30,9 +30,33 @@ struct StatusPageController: RouteCollection {
             .sort(\.$name, .ascending)
             .all()
 
-        // Compute stats per monitor
-        let thirtyDaysAgo = Date().addingTimeInterval(-30 * 86400)
+        // Batch stats for all monitors in a single query
         let sevenDaysAgo = Date().addingTimeInterval(-7 * 86400)
+        let thirtyDaysAgo = Date().addingTimeInterval(-30 * 86400)
+        let monitorIDs = monitors.compactMap(\.id)
+
+        struct MonitorStats: Decodable {
+            let monitor_id: UUID
+            let up_count: Int?
+            let total: Int?
+            let avg_ms: Double?
+        }
+        var statsMap: [UUID: MonitorStats] = [:]
+        // Batch query: one query per monitor but using SQL aggregates (no .all() loading)
+        if let sql = req.db as? SQLDatabase {
+            for monitorID in monitorIDs {
+                if let stats = try await sql.raw("""
+                    SELECT \(bind: monitorID) as monitor_id,
+                           SUM(CASE WHEN status = 'up' THEN 1 ELSE 0 END) as up_count,
+                           COUNT(*) as total,
+                           AVG(CASE WHEN status = 'up' THEN response_time_ms END) as avg_ms
+                    FROM monitor_checks
+                    WHERE monitor_id = \(bind: monitorID) AND checked_at >= \(bind: sevenDaysAgo)
+                """).first(decoding: MonitorStats.self) {
+                    statsMap[monitorID] = stats
+                }
+            }
+        }
 
         var monitorRows = ""
         var allUp = true
@@ -40,26 +64,11 @@ struct StatusPageController: RouteCollection {
         for monitor in monitors {
             guard let monitorID = monitor.id else { continue }
 
-            let total7d = try await MonitorCheck.query(on: req.db)
-                .filter(\.$monitor.$id == monitorID)
-                .filter(\.$checkedAt >= sevenDaysAgo)
-                .count()
-            let up7d = try await MonitorCheck.query(on: req.db)
-                .filter(\.$monitor.$id == monitorID)
-                .filter(\.$checkedAt >= sevenDaysAgo)
-                .filter(\.$status == "up")
-                .count()
-            let uptime7d: String = total7d == 0 ? "—" : String(format: "%.1f%%", Double(up7d) / Double(total7d) * 100)
-
-            var avgMs = "—"
-            if let sql = req.db as? SQLDatabase {
-                struct AvgResult: Decodable { let avg: Double? }
-                let result = try await sql.raw("""
-                    SELECT AVG(response_time_ms) as avg FROM monitor_checks
-                    WHERE monitor_id = \(bind: monitorID) AND checked_at >= \(bind: thirtyDaysAgo) AND status = 'up'
-                """).first(decoding: AvgResult.self)
-                if let avg = result?.avg { avgMs = "\(Int(avg))ms" }
-            }
+            let stats = statsMap[monitorID]
+            let total = stats?.total ?? 0
+            let upCount = stats?.up_count ?? 0
+            let uptime7d: String = total == 0 ? "—" : String(format: "%.1f%%", Double(upCount) / Double(total) * 100)
+            let avgMs: String = stats?.avg_ms.map { "\(Int($0))ms" } ?? "—"
 
             let statusDot: String
             let statusText: String
