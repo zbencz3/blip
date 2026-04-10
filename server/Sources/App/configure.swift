@@ -6,6 +6,19 @@ import VaporAPNS
 import APNS
 import Crypto
 
+/// Prevents overlapping scheduled task executions
+private actor SchedulerGuard {
+    var isRunning = false
+    func tryStart() -> Bool {
+        guard !isRunning else { return false }
+        isRunning = true
+        return true
+    }
+    func finish() { isRunning = false }
+}
+
+private let monitorGuard = SchedulerGuard()
+
 func configure(_ app: Application) async throws {
     let dbPath = Environment.get("DB_PATH") ?? (app.environment == .production ? "/data/db.sqlite" : "db.sqlite")
     app.databases.use(.sqlite(.file(dbPath)), as: .sqlite)
@@ -17,6 +30,7 @@ func configure(_ app: Application) async throws {
     app.migrations.add(CreateMonitorCheck())
     app.migrations.add(AddStatusToken())
     app.migrations.add(AddMonitorFeatures())
+    app.migrations.add(AddMonitorCheckIndexes())
     try await app.autoMigrate()
 
     configureAPNs(app)
@@ -41,9 +55,11 @@ func configure(_ app: Application) async throws {
         }
     }
 
-    // Monitor checker: runs every 30 seconds
+    // Monitor checker: runs every 30 seconds (guarded against overlap)
     app.eventLoopGroup.next().scheduleRepeatedTask(initialDelay: .seconds(30), delay: .seconds(30)) { _ in
         Task {
+            guard await monitorGuard.tryStart() else { return }
+            defer { Task { await monitorGuard.finish() } }
             await MonitorChecker.checkAll(app: app)
         }
     }

@@ -1,5 +1,6 @@
 import Fluent
 import Vapor
+import SQLKit
 
 struct MonitorController: RouteCollection {
     static let freeMonitorLimit = 5
@@ -164,20 +165,28 @@ struct MonitorController: RouteCollection {
             return (Double(upCount30d) / Double(totalCount30d)) * 100.0
         }()
 
-        // Only load response times for successful checks (much smaller set for avg/min/max)
-        let responseTimes = try await MonitorCheck.query(on: req.db)
-            .filter(\.$monitor.$id == monitorID)
-            .filter(\.$checkedAt >= thirtyDaysAgo)
-            .filter(\.$status == "up")
-            .all()
-            .map(\.responseTimeMs)
+        // Use SQL aggregates instead of loading all rows
+        var avgMs: Int?
+        var minMs: Int?
+        var maxMs: Int?
+        if let sql = req.db as? SQLDatabase {
+            struct AggResult: Decodable { let avg: Double?; let min: Int?; let max: Int? }
+            let agg = try await sql.raw("""
+                SELECT AVG(response_time_ms) as avg, MIN(response_time_ms) as min, MAX(response_time_ms) as max
+                FROM monitor_checks
+                WHERE monitor_id = \(bind: monitorID) AND checked_at >= \(bind: thirtyDaysAgo) AND status = 'up'
+            """).first(decoding: AggResult.self)
+            avgMs = agg?.avg.map { Int($0) }
+            minMs = agg?.min
+            maxMs = agg?.max
+        }
 
         return MonitorStatsResponse(
             uptime7d: uptime7d.map { ($0 * 100).rounded() / 100 },
             uptime30d: uptime30d.map { ($0 * 100).rounded() / 100 },
-            avgResponseMs: responseTimes.isEmpty ? nil : responseTimes.reduce(0, +) / responseTimes.count,
-            minResponseMs: responseTimes.min(),
-            maxResponseMs: responseTimes.max(),
+            avgResponseMs: avgMs,
+            minResponseMs: minMs,
+            maxResponseMs: maxMs,
             totalChecks: totalCount30d
         )
     }
@@ -260,28 +269,26 @@ struct MonitorController: RouteCollection {
         let calendar = Calendar.current
         let ninetyDaysAgo = now.addingTimeInterval(-90 * 86400)
 
-        // Load only status + date (not full objects) to save memory
-        let checks = try await MonitorCheck.query(on: req.db)
-            .filter(\.$monitor.$id == monitorID)
-            .filter(\.$checkedAt >= ninetyDaysAgo)
-            .field(\.$status)
-            .field(\.$checkedAt)
-            .all()
-
-        // Group by day
+        // Use SQL GROUP BY instead of loading all rows
         var dayBuckets: [String: (up: Int, total: Int)] = [:]
+        if let sql = req.db as? SQLDatabase {
+            struct DayBucket: Decodable { let day: String; let up_count: Int; let total: Int }
+            let rows = try await sql.raw("""
+                SELECT strftime('%Y-%m-%d', checked_at) as day,
+                       SUM(CASE WHEN status = 'up' THEN 1 ELSE 0 END) as up_count,
+                       COUNT(*) as total
+                FROM monitor_checks
+                WHERE monitor_id = \(bind: monitorID) AND checked_at >= \(bind: ninetyDaysAgo)
+                GROUP BY day
+            """).all(decoding: DayBucket.self)
+            for row in rows {
+                dayBuckets[row.day] = (up: row.up_count, total: row.total)
+            }
+        }
+
         let dayFormatter = DateFormatter()
         dayFormatter.dateFormat = "yyyy-MM-dd"
         dayFormatter.timeZone = TimeZone(identifier: "UTC")
-
-        for check in checks {
-            guard let date = check.checkedAt else { continue }
-            let key = dayFormatter.string(from: date)
-            var bucket = dayBuckets[key] ?? (up: 0, total: 0)
-            bucket.total += 1
-            if check.status == "up" { bucket.up += 1 }
-            dayBuckets[key] = bucket
-        }
 
         // Build 90 days of bars
         var bars: [UptimeBarResponse] = []

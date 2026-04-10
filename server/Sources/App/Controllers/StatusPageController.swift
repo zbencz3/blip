@@ -1,5 +1,6 @@
 import Vapor
 import Fluent
+import SQLKit
 
 struct StatusPageController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
@@ -50,14 +51,15 @@ struct StatusPageController: RouteCollection {
                 .count()
             let uptime7d: String = total7d == 0 ? "—" : String(format: "%.1f%%", Double(up7d) / Double(total7d) * 100)
 
-            let responseTimes = try await MonitorCheck.query(on: req.db)
-                .filter(\.$monitor.$id == monitorID)
-                .filter(\.$checkedAt >= thirtyDaysAgo)
-                .filter(\.$status == "up")
-                .field(\.$responseTimeMs)
-                .all()
-                .map(\.responseTimeMs)
-            let avgMs = responseTimes.isEmpty ? "—" : "\(responseTimes.reduce(0, +) / responseTimes.count)ms"
+            var avgMs = "—"
+            if let sql = req.db as? SQLDatabase {
+                struct AvgResult: Decodable { let avg: Double? }
+                let result = try await sql.raw("""
+                    SELECT AVG(response_time_ms) as avg FROM monitor_checks
+                    WHERE monitor_id = \(bind: monitorID) AND checked_at >= \(bind: thirtyDaysAgo) AND status = 'up'
+                """).first(decoding: AvgResult.self)
+                if let avg = result?.avg { avgMs = "\(Int(avg))ms" }
+            }
 
             let statusDot: String
             let statusText: String

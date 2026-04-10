@@ -48,7 +48,7 @@ struct MonitorChecker {
             if (200..<300).contains(statusCode) {
                 // Check keyword if configured and using GET
                 if let keyword = monitor.keyword, monitor.method == "GET" {
-                    let body = try await response.body.collect(upTo: 1_048_576) // 1MB limit
+                    let body = try await response.body.collect(upTo: 262_144) // 256KB limit
                     let bodyString = String(buffer: body)
                     let found = bodyString.contains(keyword)
                     keywordMatched = found
