@@ -66,10 +66,20 @@ struct BlipApp: App {
                     #if canImport(UIKit)
                     QuickActions.registerShortcuts()
                     #endif
+
+                    // Always re-register device on launch (handles server data loss)
+                    if let savedToken = UserDefaults.standard.string(forKey: "device_token") {
+                        _ = try? await APIClient().registerDevice(
+                            secret: secretManager.currentSecret,
+                            deviceToken: savedToken,
+                            deviceName: deviceName
+                        )
+                    }
                 }
                 .onChange(of: pushManager.deviceToken) { _, newToken in
                     guard let token = newToken else { return }
                     Task {
+                        // Always register on token change + save token for widget
                         _ = try? await APIClient().registerDevice(
                             secret: secretManager.currentSecret,
                             deviceToken: token,
