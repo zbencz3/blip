@@ -1,11 +1,7 @@
 import Foundation
 
 enum Constants {
-    #if DEBUG
-    static let baseURL = "http://192.168.1.145:8080"
-    #else
     static let baseURL = "https://bzap-server.fly.dev"
-    #endif
     static let apiBaseURL = "\(baseURL)/v1"
 
     enum Keychain {
