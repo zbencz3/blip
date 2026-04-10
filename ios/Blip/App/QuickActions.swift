@@ -7,7 +7,7 @@ enum QuickActionType: String {
 }
 
 enum QuickActions {
-    static func registerShortcuts() {
+    @MainActor static func registerShortcuts() {
         UIApplication.shared.shortcutItems = [
             UIApplicationShortcutItem(
                 type: QuickActionType.copyWebhook.rawValue,

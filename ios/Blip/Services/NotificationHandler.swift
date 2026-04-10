@@ -1,5 +1,5 @@
 import Foundation
-import UserNotifications
+@preconcurrency import UserNotifications
 
 #if canImport(UIKit)
 import UIKit
@@ -69,13 +69,14 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
                 let hasResponseChannel = actionDict["response_channel"] as? Bool == true
                 let responseURL = userInfo["response_url"] as? String
                 let userText = (response as? UNTextInputNotificationResponse)?.userText
-                #if canImport(UIKit)
-                nonisolated(unsafe) let deviceName = UIDevice.current.name
-                #else
-                let deviceName = Host.current().localizedName ?? "Mac"
-                #endif
                 nonisolated(unsafe) let handler = completionHandler
                 Task { @Sendable in
+                    #if canImport(UIKit)
+                    let deviceName = await MainActor.run { UIDevice.current.name }
+                    #else
+                    let deviceName = Host.current().localizedName ?? "Mac"
+                    #endif
+
                     // Fire legacy webhook if present (backward compatible)
                     if let webhookURL {
                         await ActionWebhookService.fire(url: webhookURL)

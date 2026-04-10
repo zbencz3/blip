@@ -1,4 +1,4 @@
-import UserNotifications
+@preconcurrency import UserNotifications
 
 enum NotificationCategories {
     static let generalCategory = "BZAP_GENERAL"

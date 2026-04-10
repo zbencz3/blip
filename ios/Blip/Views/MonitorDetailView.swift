@@ -462,7 +462,7 @@ struct MonitorDetailView: View {
                     Task {
                         try? await apiClient.sendStatusPagePush(
                             secret: secretManager.currentSecret,
-                            statusPageURL: statusPageURL ?? ""
+                            statusPageURL: statusPageURL
                         )
                         showSent = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {

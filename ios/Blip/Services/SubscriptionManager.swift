@@ -27,7 +27,7 @@ final class SubscriptionManager {
         static let all: [String] = [monthly, yearly]
     }
 
-    private nonisolated(unsafe) var transactionListener: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var transactionListener: Task<Void, Never>?
 
     init() {
         transactionListener = listenForTransactions()

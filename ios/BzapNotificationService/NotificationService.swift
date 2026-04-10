@@ -1,4 +1,4 @@
-import UserNotifications
+@preconcurrency import UserNotifications
 
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
@@ -79,13 +79,15 @@ class NotificationService: UNNotificationServiceExtension {
         // Merge with existing categories, then deliver
         let center = UNUserNotificationCenter.current()
         let staticCategories: Set<UNNotificationCategory> = [generalCategory, urlCategory, dynamicCategory]
+        nonisolated(unsafe) let deliver = contentHandler
+        nonisolated(unsafe) let finalContent = content
         center.getNotificationCategories { existing in
             let merged = existing.union(staticCategories)
             center.setNotificationCategories(merged)
 
             // Give the system a moment to register the category
             DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) {
-                contentHandler(content)
+                deliver(finalContent)
             }
         }
     }

@@ -1,11 +1,18 @@
 # CLAUDE.md — brr (brrr clone)
 
+## File Access
+
+Only read/write files within this project directory (`/Users/zsolt/Developer/claude/brr/`). Do not access files outside this directory (no `~/Library`, no `~/Documents`, no other projects) unless explicitly asked by the user.
+
 ## Project Goal
 
-Build a clone of **brrr** (https://brrr.now by Simon Støvring) — a simple push notification relay service. The project has two components:
+**Bzap** — a developer-first push notification + monitoring platform. Mobile-first, no-signup, terminal aesthetic. What started as a brrr clone has evolved into a full-featured tool with capabilities no competitor offers.
 
-1. **Backend API** — receives webhook POST requests and forwards them as APNs push notifications
-2. **iOS app** — registers for push notifications, generates webhook URLs, displays notification history
+Components:
+1. **Backend API** (Swift/Vapor) — push relay, uptime monitoring, heartbeat/dead man's switch, response channel
+2. **iOS app** (SwiftUI) — webhook management, monitor dashboard, action buttons, status pages, home screen widget
+3. **Notification Service Extension** — dynamic action categories, image attachments
+4. **Widget Extension** — monitor status at a glance
 
 ### How it works
 - No signup/login required. The app generates a webhook URL with an embedded secret
