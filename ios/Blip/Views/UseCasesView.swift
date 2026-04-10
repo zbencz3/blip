@@ -150,6 +150,20 @@ struct ActionExample: Identifiable {
 
     static let all: [ActionExample] = [
         ActionExample(
+            notification: "🔴 API Server missed heartbeat",
+            buttons: [
+                .init(label: "Restart", style: .primary),
+                .init(label: "Snooze 1h", style: .secondary)
+            ]
+        ),
+        ActionExample(
+            notification: "🔴 api.example.com is down — 502",
+            buttons: [
+                .init(label: "Acknowledge", style: .primary),
+                .init(label: "Escalate", style: .danger)
+            ]
+        ),
+        ActionExample(
             notification: "🚀 Deploy v2.3.1 ready — all tests passing",
             buttons: [
                 .init(label: "Deploy to Prod", style: .primary),
@@ -157,24 +171,17 @@ struct ActionExample: Identifiable {
             ]
         ),
         ActionExample(
-            notification: "🏠 Motion detected in garage — 11:42 PM",
-            buttons: [
-                .init(label: "Turn On Lights", style: .primary),
-                .init(label: "Lock Door", style: .secondary)
-            ]
-        ),
-        ActionExample(
-            notification: "📡 API down — 502 for 2 minutes",
-            buttons: [
-                .init(label: "Restart", style: .primary),
-                .init(label: "Scale Up", style: .secondary)
-            ]
-        ),
-        ActionExample(
             notification: "🤖 feat: add auth — 12 tests pass",
             buttons: [
                 .init(label: "Approve", style: .primary),
                 .init(label: "Reject", style: .danger)
+            ]
+        ),
+        ActionExample(
+            notification: "🏠 Motion detected in garage — 11:42 PM",
+            buttons: [
+                .init(label: "Turn On Lights", style: .primary),
+                .init(label: "Lock Door", style: .secondary)
             ]
         ),
     ]
@@ -243,11 +250,18 @@ struct UseCase: Identifiable {
 
     static let all: [UseCase] = [
         UseCase(
-            emoji: "🏠",
-            title: "Home Automation",
-            description: "Motion alerts, leak detection, temperature drops. Tap a button to turn on lights or lock doors.",
-            example: "\"Motion detected in garage\"",
-            action: "[Turn On Lights] [Lock Door]"
+            emoji: "📡",
+            title: "Uptime Monitoring",
+            description: "Monitor your APIs and websites. Get alerted when they go down, see response times and uptime %.",
+            example: "\"API is down — 502\"",
+            action: "[Acknowledge] [View Status]"
+        ),
+        UseCase(
+            emoji: "💓",
+            title: "Dead Man's Switch",
+            description: "Your service pings Bzap. If it stops pinging, you get alerted. Perfect for cron jobs and workers.",
+            example: "curl POST /v1/heartbeat/token",
+            action: "No ping → [Restart] [Snooze]"
         ),
         UseCase(
             emoji: "🚀",
@@ -264,18 +278,25 @@ struct UseCase: Identifiable {
             action: "[Approve] [Reject]"
         ),
         UseCase(
-            emoji: "📡",
-            title: "Server Monitoring",
-            description: "Uptime checks, error spikes, disk warnings. Restart services with one tap.",
-            example: "\"API down — 502 for 2 min\"",
-            action: "[Restart] [Scale Up]"
+            emoji: "🏠",
+            title: "Home Automation",
+            description: "Motion alerts, leak detection, temperature drops. Tap a button to turn on lights or lock doors.",
+            example: "\"Motion detected in garage\"",
+            action: "[Turn On Lights] [Lock Door]"
         ),
         UseCase(
             emoji: "📜",
             title: "Cron Jobs & Scripts",
-            description: "Backups, data exports, ML training. Fire and forget, get pinged when done.",
+            description: "Backups, data exports, ML training. Add a heartbeat ping at the end — silence means trouble.",
             example: "\"Backup complete: 12.4 GB\"",
             action: "[View Log] [Dismiss]"
+        ),
+        UseCase(
+            emoji: "🔑",
+            title: "SSL & Keyword Checks",
+            description: "Monitor response bodies for keywords. Alert if 'healthy' disappears or 'error' appears.",
+            example: "GET /health → \"healthy\"",
+            action: "Keyword missing → alert"
         ),
         UseCase(
             emoji: "🔔",
