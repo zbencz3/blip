@@ -34,7 +34,7 @@ struct LinkDeviceView: View {
                                 ProgressView()
                                     .tint(BlipColors.accentGreen)
                                 Text("Linking device...")
-                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                                    .font(BlipFonts.label)
                                     .foregroundStyle(BlipColors.textSecondary)
                             }
                             .padding(.top, 60)
@@ -80,13 +80,13 @@ struct LinkDeviceView: View {
         VStack(spacing: 20) {
             VStack(spacing: 8) {
                 Image(systemName: "link.circle.fill")
-                    .font(.system(size: 48))
+                    .font(BlipFonts.hero)
                     .foregroundStyle(BlipColors.accentPurple)
                 Text("Link another device")
-                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.title)
                     .foregroundStyle(BlipColors.textPrimary)
                 Text("Share your account between iPhone and iPad.")
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(BlipFonts.caption)
                     .foregroundStyle(BlipColors.textSecondary)
             }
             .padding(.bottom, 8)
@@ -95,15 +95,15 @@ struct LinkDeviceView: View {
             Button { mode = .showQR } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "qrcode")
-                        .font(.system(size: 24))
+                        .font(BlipFonts.titleLarge)
                         .foregroundStyle(BlipColors.accentGreen)
                         .frame(width: 40)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Show QR Code")
-                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                            .font(BlipFonts.cardTitle)
                             .foregroundStyle(BlipColors.textPrimary)
                         Text("Display on this device, scan from the other")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(BlipFonts.helper)
                             .foregroundStyle(BlipColors.textSecondary)
                     }
                     Spacer()
@@ -126,15 +126,15 @@ struct LinkDeviceView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "camera.viewfinder")
-                        .font(.system(size: 24))
+                        .font(BlipFonts.titleLarge)
                         .foregroundStyle(BlipColors.accentPurple)
                         .frame(width: 40)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Scan QR Code")
-                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                            .font(BlipFonts.cardTitle)
                             .foregroundStyle(BlipColors.textPrimary)
                         Text("Scan from the device that has your account")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(BlipFonts.helper)
                             .foregroundStyle(BlipColors.textSecondary)
                     }
                     Spacer()
@@ -152,7 +152,7 @@ struct LinkDeviceView: View {
 
             if let error {
                 Text(error)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(BlipFonts.small)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
             }
@@ -164,7 +164,7 @@ struct LinkDeviceView: View {
     private var showQRView: some View {
         VStack(spacing: 20) {
             Text("Scan this from your other device")
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                .font(BlipFonts.label)
                 .foregroundStyle(BlipColors.textSecondary)
 
             if let image = generateQR(from: secretManager.currentSecret) {
@@ -179,13 +179,13 @@ struct LinkDeviceView: View {
             }
 
             Text("This QR contains your account secret.\nDo not share it publicly.")
-                .font(.system(size: 11, design: .monospaced))
+                .font(BlipFonts.helper)
                 .foregroundStyle(BlipColors.textSecondary)
                 .multilineTextAlignment(.center)
 
             Button { mode = .choose } label: {
                 Text("Back")
-                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    .font(BlipFonts.cardTitle)
                     .foregroundStyle(BlipColors.textPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)

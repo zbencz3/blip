@@ -49,10 +49,10 @@ struct EditMonitorSheet: View {
                     VStack(alignment: .leading, spacing: 20) {
                         HStack(spacing: 8) {
                             Text("$")
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .font(BlipFonts.labelBold)
                                 .foregroundStyle(BlipColors.accentPurple)
                             Text("edit monitor")
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .font(BlipFonts.small)
                                 .foregroundStyle(BlipColors.textSecondary)
                         }
 
@@ -61,7 +61,7 @@ struct EditMonitorSheet: View {
                             Image(systemName: monitor.isHeartbeat ? "heart.fill" : "globe")
                                 .foregroundStyle(BlipColors.accentPurple)
                             Text(monitor.isHeartbeat ? "Heartbeat Monitor" : "HTTP Monitor")
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .font(BlipFonts.button)
                                 .foregroundStyle(BlipColors.textSecondary)
                         }
 
@@ -93,7 +93,7 @@ struct EditMonitorSheet: View {
 
                         if let error {
                             Text(error)
-                                .font(.system(size: 12, design: .monospaced))
+                                .font(BlipFonts.small)
                                 .foregroundStyle(.red)
                         }
 
@@ -109,7 +109,7 @@ struct EditMonitorSheet: View {
                                     Text("Save Changes")
                                 }
                             }
-                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                            .font(BlipFonts.subtitle)
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -142,13 +142,13 @@ struct EditMonitorSheet: View {
 
     private func fieldLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .bold, design: .monospaced))
+            .font(BlipFonts.sectionLabel)
             .foregroundStyle(BlipColors.textSecondary)
     }
 
     private func inputField(_ placeholder: String, text: Binding<String>, keyboard: Bool = false) -> some View {
         TextField(placeholder, text: text)
-            .font(.system(size: 15, design: .monospaced))
+            .font(BlipFonts.input)
             .foregroundStyle(BlipColors.textPrimary)
             #if os(iOS)
             .keyboardType(keyboard ? .URL : .default)
@@ -166,7 +166,7 @@ struct EditMonitorSheet: View {
             ForEach(options, id: \.self) { opt in
                 Button { selection.wrappedValue = opt } label: {
                     Text(opt)
-                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .font(BlipFonts.button)
                         .foregroundStyle(selection.wrappedValue == opt ? .black : BlipColors.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -183,7 +183,7 @@ struct EditMonitorSheet: View {
             ForEach(options, id: \.self) { opt in
                 Button { selection.wrappedValue = opt } label: {
                     Text(format(opt))
-                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .font(BlipFonts.button)
                         .foregroundStyle(selection.wrappedValue == opt ? .black : BlipColors.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)

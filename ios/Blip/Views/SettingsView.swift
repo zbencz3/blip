@@ -175,7 +175,7 @@ struct SettingsView: View {
                     let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
                     let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
                     Text("Bzap \(v) (\(b))")
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(BlipFonts.small)
                         .foregroundStyle(BlipColors.textSecondary.opacity(0.5))
                         .frame(maxWidth: .infinity)
                         .padding(.top, 12)

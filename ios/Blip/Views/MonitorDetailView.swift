@@ -101,16 +101,16 @@ struct MonitorDetailView: View {
                 .padding(.bottom, 12)
 
             Text(monitor.status.uppercased())
-                .font(.system(size: 24, weight: .black, design: .monospaced))
+                .font(BlipFonts.titleLarge)
                 .foregroundStyle(statusColor(for: monitor.status))
 
             Text(monitor.name)
-                .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                .font(BlipFonts.subtitle)
                 .foregroundStyle(BlipColors.textPrimary)
 
             if let duration = uptimeDuration {
                 Text(duration)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(BlipFonts.small)
                     .foregroundStyle(BlipColors.textSecondary)
             }
         }
@@ -154,10 +154,10 @@ struct MonitorDetailView: View {
                 .frame(width: 0.5)
             VStack(spacing: 4) {
                 Text("\(stats?.totalChecks ?? 0)")
-                    .font(.system(size: 20, weight: .black, design: .monospaced))
+                    .font(BlipFonts.titleMono)
                     .foregroundStyle(BlipColors.textPrimary)
                 Text("CHECKS")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.micro)
                     .foregroundStyle(BlipColors.textSecondary)
             }
             .frame(maxWidth: .infinity)
@@ -175,15 +175,15 @@ struct MonitorDetailView: View {
         VStack(spacing: 4) {
             if let value {
                 Text(String(format: "%.1f%%", value))
-                    .font(.system(size: 20, weight: .black, design: .monospaced))
+                    .font(BlipFonts.titleMono)
                     .foregroundStyle(value >= 99 ? .green : value >= 95 ? .orange : .red)
             } else {
                 Text("—")
-                    .font(.system(size: 20, weight: .black, design: .monospaced))
+                    .font(BlipFonts.titleMono)
                     .foregroundStyle(BlipColors.textSecondary.opacity(0.4))
             }
             Text(label)
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .font(BlipFonts.micro)
                 .foregroundStyle(BlipColors.textSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -194,7 +194,7 @@ struct MonitorDetailView: View {
     private var responseTimeChart: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("RESPONSE TIME")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .font(BlipFonts.sectionLabel)
                 .foregroundStyle(BlipColors.textSecondary)
 
             Chart(checks) { check in
@@ -261,12 +261,12 @@ struct MonitorDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("UPTIME — 90 DAYS")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.sectionLabel)
                     .foregroundStyle(BlipColors.textSecondary)
                 Spacer()
                 let avg = uptimeBars.compactMap(\.uptime).reduce(0, +) / max(Double(uptimeBars.compactMap(\.uptime).count), 1)
                 Text(String(format: "%.1f%%", avg))
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.sectionLabel)
                     .foregroundStyle(avg >= 99 ? .green : avg >= 95 ? .orange : .red)
             }
 
@@ -310,24 +310,24 @@ struct MonitorDetailView: View {
     private var heartbeatPingCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("PING URL")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .font(BlipFonts.sectionLabel)
                 .foregroundStyle(BlipColors.textSecondary)
 
             Text("Your service should POST or GET this URL at the expected interval.")
-                .font(.system(size: 11, design: .monospaced))
+                .font(BlipFonts.helper)
                 .foregroundStyle(BlipColors.textSecondary.opacity(0.6))
 
             if let heartbeatUrl = monitor.heartbeatUrl {
                 ScrollView(.horizontal, showsIndicators: false) {
                     Text(heartbeatUrl)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(BlipFonts.helper)
                         .foregroundStyle(BlipColors.accentGreen)
                         .textSelection(.enabled)
                 }
 
                 // Curl snippet
                 Text("curl -X POST \(heartbeatUrl)")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(BlipFonts.codeSmall)
                     .foregroundStyle(BlipColors.textCode)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -344,7 +344,7 @@ struct MonitorDetailView: View {
                             Image(systemName: "doc.on.doc")
                             Text("Copy URL")
                         }
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .font(BlipFonts.smallButton)
                         .foregroundStyle(.black)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
@@ -361,7 +361,7 @@ struct MonitorDetailView: View {
                             Image(systemName: "terminal")
                             Text("Copy curl")
                         }
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .font(BlipFonts.smallButton)
                         .foregroundStyle(.black)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
@@ -405,7 +405,7 @@ struct MonitorDetailView: View {
             if let statusPageURL {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("STATUS PAGE")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .font(BlipFonts.sectionLabel)
                         .foregroundStyle(BlipColors.textSecondary)
 
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -417,7 +417,7 @@ struct MonitorDetailView: View {
                             }
                         } label: {
                             Text(statusPageURL)
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(BlipFonts.helper)
                                 .foregroundStyle(BlipColors.accentPurple)
                                 .underline()
                         }
@@ -437,7 +437,7 @@ struct MonitorDetailView: View {
                                 Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
                                 Text(showCopied ? "Copied!" : "Copy")
                             }
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .font(BlipFonts.smallButton)
                             .foregroundStyle(.black)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
@@ -450,7 +450,7 @@ struct MonitorDetailView: View {
                         Image(systemName: "square.and.arrow.up")
                         Text("Share")
                     }
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(BlipFonts.smallButton)
                     .foregroundStyle(.black)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -474,7 +474,7 @@ struct MonitorDetailView: View {
                         Image(systemName: showSent ? "checkmark" : "paperplane.fill")
                         Text(showSent ? "Sent!" : "Push")
                     }
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(BlipFonts.smallButton)
                     .foregroundStyle(.black)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -500,11 +500,11 @@ struct MonitorDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("INCIDENTS")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.sectionLabel)
                     .foregroundStyle(BlipColors.textSecondary)
                 Spacer()
                 Text("\(incidents.count)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.sectionLabel)
                     .foregroundStyle(incidents.isEmpty ? .green : .red)
             }
 
@@ -513,7 +513,7 @@ struct MonitorDetailView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                     Text("No incidents")
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(BlipFonts.caption)
                         .foregroundStyle(BlipColors.textSecondary)
                 }
                 .padding(.vertical, 8)
@@ -526,19 +526,19 @@ struct MonitorDetailView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             if let date = incident.checkedAt {
                                 Text(date, format: .dateTime.month().day().hour().minute())
-                                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                    .font(BlipFonts.smallButton)
                                     .foregroundStyle(BlipColors.textPrimary)
                             }
                             if let error = incident.error {
                                 Text(error)
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .font(BlipFonts.tiny)
                                     .foregroundStyle(BlipColors.textSecondary)
                                     .lineLimit(1)
                             }
                         }
                         Spacer()
                         Text("\(incident.responseTimeMs)ms")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(BlipFonts.helper)
                             .foregroundStyle(BlipColors.textSecondary)
                     }
                     if incident.id != incidents.prefix(10).last?.id {
@@ -570,11 +570,11 @@ struct MonitorDetailView: View {
                 } label: {
                     HStack {
                         Text("URL")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .font(BlipFonts.sectionLabel)
                             .foregroundStyle(BlipColors.textSecondary)
                         Spacer()
                         Text(monitor.url)
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(BlipFonts.caption)
                             .foregroundStyle(BlipColors.accentPurple)
                             .lineLimit(1)
                         Image(systemName: "arrow.up.right")
@@ -625,7 +625,7 @@ struct MonitorDetailView: View {
                     Image(systemName: monitor.status == "paused" ? "play.fill" : "pause.fill")
                     Text(monitor.status == "paused" ? "Resume Monitor" : "Pause Monitor")
                 }
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .font(BlipFonts.cardTitle)
                 .foregroundStyle(BlipColors.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -642,7 +642,7 @@ struct MonitorDetailView: View {
                     Image(systemName: "trash")
                     Text("Delete Monitor")
                 }
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .font(BlipFonts.cardTitle)
                 .foregroundStyle(.red)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -661,11 +661,11 @@ struct MonitorDetailView: View {
     private func detailRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .font(BlipFonts.sectionLabel)
                 .foregroundStyle(BlipColors.textSecondary)
             Spacer()
             Text(value)
-                .font(.system(size: 13, design: .monospaced))
+                .font(BlipFonts.caption)
                 .foregroundStyle(BlipColors.textPrimary)
                 .lineLimit(1)
         }

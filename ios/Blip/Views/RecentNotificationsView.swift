@@ -16,10 +16,10 @@ struct RecentNotificationsView: View {
                 if viewModel.sections.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "bell.slash")
-                            .font(.system(size: 40))
+                            .font(BlipFonts.hero)
                             .foregroundStyle(BlipColors.textSecondary)
                         Text("No notifications yet")
-                            .font(.system(size: 14, design: .monospaced))
+                            .font(BlipFonts.label)
                             .foregroundStyle(BlipColors.textSecondary)
                     }
                 } else {
@@ -48,7 +48,7 @@ struct RecentNotificationsView: View {
                                 }
                             } header: {
                                 Text(section.date, style: .date)
-                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                    .font(BlipFonts.button)
                                     .foregroundStyle(BlipColors.accentPurple)
                                     .textCase(nil)
                             }

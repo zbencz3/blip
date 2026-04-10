@@ -26,7 +26,7 @@ struct HomeView: View {
                     HStack {
                         Button { showNotifications = true } label: {
                             Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 20))
+                                .font(BlipFonts.titleMono)
                                 .foregroundStyle(BlipColors.textPrimary)
                                 .frame(width: 40, height: 40)
                                 .background(BlipColors.cardBackground)
@@ -36,7 +36,7 @@ struct HomeView: View {
                         Spacer()
                         Button { showSettings = true } label: {
                             Image(systemName: "gearshape.fill")
-                                .font(.system(size: 20))
+                                .font(BlipFonts.titleMono)
                                 .foregroundStyle(BlipColors.textPrimary)
                                 .frame(width: 40, height: 40)
                                 .background(BlipColors.cardBackground)
@@ -50,14 +50,14 @@ struct HomeView: View {
                     // Hero with lightning bolt
                     HStack(spacing: 12) {
                         Image(systemName: "bolt.fill")
-                            .font(.system(size: 36))
+                            .font(BlipFonts.display)
                             .foregroundStyle(BlipColors.accentPurple)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("bzap")
-                                .font(.system(size: 44, weight: .black, design: .monospaced))
+                                .font(BlipFonts.hero)
                                 .foregroundStyle(BlipColors.accentPurple)
                             Text("push notifications via webhook")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .font(BlipFonts.caption)
                                 .foregroundStyle(BlipColors.textSecondary)
                         }
                     }
@@ -69,7 +69,7 @@ struct HomeView: View {
                             .frame(width: 8, height: 8)
                             .opacity(statusOn ? 1.0 : 0)
                         Text("Ready to receive")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(BlipFonts.caption)
                             .foregroundStyle(.green)
                     }
                     .padding(.horizontal, 12)
@@ -82,10 +82,10 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("$")
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .font(BlipFonts.labelBold)
                                 .foregroundStyle(BlipColors.accentPurple)
                             Text("Quick start")
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .font(BlipFonts.small)
                                 .foregroundStyle(BlipColors.textSecondary)
                             Spacer()
                             Menu {
@@ -109,7 +109,7 @@ struct HomeView: View {
                                     Image(systemName: "paperplane.fill")
                                     Text("Send Test")
                                 }
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(BlipFonts.sectionLabel)
                                 .foregroundStyle(BlipColors.textPrimary)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
@@ -120,7 +120,7 @@ struct HomeView: View {
 
                         ScrollView(.horizontal, showsIndicators: false) {
                             Text(viewModel.curlCommand)
-                                .font(.system(size: 12, design: .monospaced))
+                                .font(BlipFonts.code)
                                 .foregroundStyle(BlipColors.textCode)
                                 .textSelection(.enabled)
                         }
@@ -146,7 +146,7 @@ struct HomeView: View {
                                 Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
                                 Text(showCopied ? "Copied!" : "Copy")
                             }
-                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                            .font(BlipFonts.cardTitle)
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -159,7 +159,7 @@ struct HomeView: View {
                                 Image(systemName: "square.and.arrow.up")
                                 Text("Share")
                             }
-                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                            .font(BlipFonts.cardTitle)
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -248,10 +248,10 @@ struct HomeView: View {
     private func featurePill(icon: String, text: String) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(BlipFonts.subtitle)
                 .foregroundStyle(BlipColors.accentPurple)
             Text(text)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(BlipFonts.tiny)
                 .foregroundStyle(BlipColors.textSecondary)
         }
         .frame(maxWidth: .infinity)

@@ -74,11 +74,11 @@ struct MonitorsView: View {
                 .foregroundStyle(BlipColors.textSecondary.opacity(0.3))
 
             Text("No monitors yet")
-                .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                .font(BlipFonts.title)
                 .foregroundStyle(BlipColors.textSecondary)
 
             Text("Add a URL to start monitoring uptime.")
-                .font(.system(size: 13, design: .monospaced))
+                .font(BlipFonts.caption)
                 .foregroundStyle(BlipColors.textSecondary.opacity(0.6))
 
             Button { showAddMonitor = true } label: {
@@ -86,7 +86,7 @@ struct MonitorsView: View {
                     Image(systemName: "plus")
                     Text("Add Monitor")
                 }
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .font(BlipFonts.cardTitle)
                 .foregroundStyle(.black)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
@@ -157,7 +157,7 @@ struct MonitorsView: View {
                 .font(.system(size: 22, weight: .black, design: .monospaced))
                 .foregroundStyle(count > 0 ? color : BlipColors.textSecondary.opacity(0.4))
             Text(label)
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .font(BlipFonts.micro)
                 .foregroundStyle(BlipColors.textSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -179,21 +179,21 @@ private struct MonitorCard: View {
                         .font(.system(size: 10))
                         .foregroundStyle(BlipColors.textSecondary.opacity(0.5))
                     Text(monitor.name)
-                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .font(BlipFonts.cardTitle)
                         .foregroundStyle(monitor.status == "paused" ? BlipColors.textSecondary : BlipColors.textPrimary)
                         .lineLimit(1)
                 }
 
                 if !monitor.isHeartbeat {
                     Text(monitor.url)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(BlipFonts.helper)
                         .foregroundStyle(BlipColors.textSecondary)
                         .lineLimit(1)
                 }
 
                 if let lastChecked = monitor.lastCheckedAt {
                     Text("\(monitor.isHeartbeat ? "last ping" : "checked") \(lastChecked, style: .relative) ago")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(BlipFonts.tiny)
                         .foregroundStyle(BlipColors.textSecondary.opacity(0.6))
                 }
             }
@@ -201,7 +201,7 @@ private struct MonitorCard: View {
             Spacer()
 
             Text(monitor.status.uppercased())
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(BlipFonts.badge)
                 .foregroundStyle(statusColor(for: monitor.status))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)

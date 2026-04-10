@@ -14,21 +14,21 @@ struct NotificationRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 if let title = notification.title, !title.isEmpty {
                     Text(title)
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .font(BlipFonts.label)
                         .foregroundStyle(BlipColors.textPrimary)
                         .lineLimit(2)
                 }
 
                 if let message = notification.message, !message.isEmpty {
                     Text(message)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(BlipFonts.caption)
                         .foregroundStyle(BlipColors.textSecondary)
                         .lineLimit(3)
                 }
 
                 if let subtitle = notification.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(BlipFonts.helper)
                         .foregroundStyle(BlipColors.textSecondary.opacity(0.7))
                         .lineLimit(1)
                 }
@@ -37,7 +37,7 @@ struct NotificationRow: View {
             Spacer(minLength: 4)
 
             Text(notification.receivedAt, style: .time)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .font(BlipFonts.metadata)
                 .foregroundStyle(BlipColors.textSecondary.opacity(0.6))
         }
         .padding(.vertical, 10)

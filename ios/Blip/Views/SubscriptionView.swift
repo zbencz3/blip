@@ -17,7 +17,7 @@ struct SubscriptionView: View {
                     VStack(spacing: 8) {
                         Text("Subscribe to\nkeep ") + Text("bzap").foregroundColor(BlipColors.accentPurple).bold() + Text("'ing")
                     }
-                    .font(.system(size: 32, weight: .bold))
+                    .font(BlipFonts.display)
                     .foregroundStyle(BlipColors.textPrimary)
                     .multilineTextAlignment(.center)
 
@@ -29,7 +29,7 @@ struct SubscriptionView: View {
                             Text("You're subscribed!")
                                 .foregroundStyle(BlipColors.accentGreen)
                         }
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(BlipFonts.body)
                     } else if let trialManager {
                         HStack(spacing: 0) {
                             Text("Your free access ends ")
@@ -119,7 +119,7 @@ struct SubscriptionView: View {
                                     Text("Subscribe")
                                 }
                             }
-                            .font(.system(size: 18, weight: .bold))
+                            .font(BlipFonts.sectionHeader)
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -132,7 +132,7 @@ struct SubscriptionView: View {
                             Task { await subscriptionManager.restore() }
                         } label: {
                             Text("Restore Subscription")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(BlipFonts.body)
                                 .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
@@ -193,7 +193,7 @@ struct SubscriptionView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(product.displayName)
-                            .font(.system(size: 20, weight: .bold))
+                            .font(BlipFonts.sectionHeader)
                             .foregroundStyle(BlipColors.textPrimary)
                         Text(product.displayPrice + "/" + (product.subscription?.subscriptionPeriod.unit == .year ? "year" : "month"))
                             .font(BlipFonts.caption)
@@ -202,7 +202,7 @@ struct SubscriptionView: View {
                     Spacer()
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(isSelected ? BlipColors.accentGreen : BlipColors.textSecondary)
-                        .font(.system(size: 24))
+                        .font(BlipFonts.display)
                 }
                 Text(product.description)
                     .font(BlipFonts.caption)
@@ -224,7 +224,7 @@ struct SubscriptionView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(title)
-                            .font(.system(size: 20, weight: .bold))
+                            .font(BlipFonts.sectionHeader)
                             .foregroundStyle(BlipColors.textPrimary)
                         Text(price)
                             .font(BlipFonts.caption)
@@ -233,7 +233,7 @@ struct SubscriptionView: View {
                     Spacer()
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(isSelected ? BlipColors.accentGreen : BlipColors.textSecondary)
-                        .font(.system(size: 24))
+                        .font(BlipFonts.display)
                 }
                 Text(description)
                     .font(BlipFonts.caption)

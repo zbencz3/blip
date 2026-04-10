@@ -34,17 +34,17 @@ struct AddMonitorSheet: View {
                         // Header
                         HStack(spacing: 8) {
                             Text("$")
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .font(BlipFonts.labelBold)
                                 .foregroundStyle(BlipColors.accentPurple)
                             Text("new monitor")
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .font(BlipFonts.small)
                                 .foregroundStyle(BlipColors.textSecondary)
                         }
 
                         // Type selector
                         VStack(alignment: .leading, spacing: 6) {
                             Text("TYPE")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .font(BlipFonts.sectionLabel)
                                 .foregroundStyle(BlipColors.textSecondary)
 
                             HStack(spacing: 8) {
@@ -56,10 +56,10 @@ struct AddMonitorSheet: View {
                         // Name field
                         VStack(alignment: .leading, spacing: 6) {
                             Text("NAME")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .font(BlipFonts.sectionLabel)
                                 .foregroundStyle(BlipColors.textSecondary)
                             TextField(monitorType == "heartbeat" ? "My Cron Job" : "My API Server", text: $name)
-                                .font(.system(size: 15, design: .monospaced))
+                                .font(BlipFonts.input)
                                 .foregroundStyle(BlipColors.textPrimary)
                                 .padding(12)
                                 .background(BlipColors.cardBackground)
@@ -79,14 +79,14 @@ struct AddMonitorSheet: View {
                         // Interval picker
                         VStack(alignment: .leading, spacing: 6) {
                             Text(monitorType == "heartbeat" ? "EXPECTED PING INTERVAL" : "CHECK INTERVAL")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .font(BlipFonts.sectionLabel)
                                 .foregroundStyle(BlipColors.textSecondary)
 
                             HStack(spacing: 8) {
                                 ForEach(intervals, id: \.self) { mins in
                                     Button { interval = mins } label: {
                                         Text("\(mins) min")
-                                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                            .font(BlipFonts.button)
                                             .foregroundStyle(interval == mins ? .black : BlipColors.textSecondary)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 10)
@@ -104,14 +104,14 @@ struct AddMonitorSheet: View {
                         // Failure threshold
                         VStack(alignment: .leading, spacing: 6) {
                             Text("ALERT AFTER")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .font(BlipFonts.sectionLabel)
                                 .foregroundStyle(BlipColors.textSecondary)
 
                             HStack(spacing: 8) {
                                 ForEach([1, 3, 5], id: \.self) { n in
                                     Button { failureThreshold = n } label: {
                                         Text("\(n) fail\(n == 1 ? "" : "s")")
-                                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                            .font(BlipFonts.button)
                                             .foregroundStyle(failureThreshold == n ? .black : BlipColors.textSecondary)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 10)
@@ -160,7 +160,7 @@ struct AddMonitorSheet: View {
                                     }
                                 }
                             }
-                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                            .font(BlipFonts.subtitle)
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -196,10 +196,10 @@ struct AddMonitorSheet: View {
             // URL
             VStack(alignment: .leading, spacing: 6) {
                 Text("URL")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.sectionLabel)
                     .foregroundStyle(BlipColors.textSecondary)
                 TextField("https://example.com/health", text: $url)
-                    .font(.system(size: 15, design: .monospaced))
+                    .font(BlipFonts.input)
                     .foregroundStyle(BlipColors.textPrimary)
                     #if os(iOS)
                     .keyboardType(.URL)
@@ -218,13 +218,13 @@ struct AddMonitorSheet: View {
             // Method
             VStack(alignment: .leading, spacing: 6) {
                 Text("METHOD")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.sectionLabel)
                     .foregroundStyle(BlipColors.textSecondary)
                 HStack(spacing: 8) {
                     ForEach(["HEAD", "GET"], id: \.self) { m in
                         Button { method = m } label: {
                             Text(m)
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .font(BlipFonts.button)
                                 .foregroundStyle(method == m ? .black : BlipColors.textSecondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
@@ -243,10 +243,10 @@ struct AddMonitorSheet: View {
             if method == "GET" {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("KEYWORD CHECK")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .font(BlipFonts.sectionLabel)
                         .foregroundStyle(BlipColors.textSecondary)
                     TextField("optional — e.g. \"ok\" or \"healthy\"", text: $keyword)
-                        .font(.system(size: 15, design: .monospaced))
+                        .font(BlipFonts.input)
                         .foregroundStyle(BlipColors.textPrimary)
                         .autocorrectionDisabled()
                         .padding(12)
@@ -261,7 +261,7 @@ struct AddMonitorSheet: View {
                         HStack(spacing: 8) {
                             Button { keywordShouldExist = true } label: {
                                 Text("Must contain")
-                                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                    .font(BlipFonts.smallButton)
                                     .foregroundStyle(keywordShouldExist ? .black : BlipColors.textSecondary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
@@ -270,7 +270,7 @@ struct AddMonitorSheet: View {
                             }
                             Button { keywordShouldExist = false } label: {
                                 Text("Must NOT contain")
-                                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                    .font(BlipFonts.smallButton)
                                     .foregroundStyle(!keywordShouldExist ? .black : BlipColors.textSecondary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
@@ -292,7 +292,7 @@ struct AddMonitorSheet: View {
                 Image(systemName: "info.circle")
                     .foregroundStyle(BlipColors.accentPurple)
                 Text("Your service pings Bzap at a regular interval. If it stops, you get alerted.")
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(BlipFonts.small)
                     .foregroundStyle(BlipColors.textSecondary)
             }
             .padding(12)
@@ -306,17 +306,17 @@ struct AddMonitorSheet: View {
             // Grace period
             VStack(alignment: .leading, spacing: 6) {
                 Text("GRACE PERIOD")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.sectionLabel)
                     .foregroundStyle(BlipColors.textSecondary)
                 Text("Extra wait time after expected interval before alerting.")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(BlipFonts.helper)
                     .foregroundStyle(BlipColors.textSecondary.opacity(0.6))
 
                 HStack(spacing: 8) {
                     ForEach([1, 5, 15], id: \.self) { mins in
                         Button { gracePeriod = mins } label: {
                             Text("\(mins) min")
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .font(BlipFonts.button)
                                 .foregroundStyle(gracePeriod == mins ? .black : BlipColors.textSecondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
@@ -339,9 +339,9 @@ struct AddMonitorSheet: View {
         Button { monitorType = type } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(BlipFonts.label)
                 Text(label)
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .font(BlipFonts.button)
             }
             .foregroundStyle(monitorType == type ? .black : BlipColors.textSecondary)
             .frame(maxWidth: .infinity)

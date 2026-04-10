@@ -19,19 +19,19 @@ struct UseCasesView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 8) {
                                 Image(systemName: "arrow.left.arrow.right")
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(BlipFonts.labelBold)
                                     .foregroundStyle(BlipColors.accentPurple)
                                 Text("TWO-WAY ACTIONS")
-                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .font(BlipFonts.smallButton)
                                     .foregroundStyle(BlipColors.accentPurple)
                             }
 
                             Text("Notifications that do things")
-                                .font(.system(size: 20, weight: .bold))
+                                .font(BlipFonts.sectionHeader)
                                 .foregroundStyle(BlipColors.textPrimary)
 
                             Text("Add action buttons that fire webhooks back when tapped. Your phone becomes a remote control.")
-                                .font(.system(size: 14))
+                                .font(BlipFonts.captionRegular)
                                 .foregroundStyle(BlipColors.textSecondary)
                                 .lineSpacing(3)
                         }
@@ -55,19 +55,19 @@ struct UseCasesView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 8) {
                                 Image(systemName: "qrcode")
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(BlipFonts.labelBold)
                                     .foregroundStyle(BlipColors.accentPurple)
                                 Text("QR CODE SHARING")
-                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .font(BlipFonts.smallButton)
                                     .foregroundStyle(BlipColors.accentPurple)
                             }
 
                             Text("Share your webhook instantly")
-                                .font(.system(size: 20, weight: .bold))
+                                .font(BlipFonts.sectionHeader)
                                 .foregroundStyle(BlipColors.textPrimary)
 
                             Text("Your webhook URL as a scannable QR code. No typing, no copy-paste across devices.")
-                                .font(.system(size: 14))
+                                .font(BlipFonts.captionRegular)
                                 .foregroundStyle(BlipColors.textSecondary)
                                 .lineSpacing(3)
 
@@ -89,12 +89,12 @@ struct UseCasesView: View {
 
                         // Use cases header
                         Text("Use Cases")
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .font(BlipFonts.smallButton)
                             .foregroundStyle(BlipColors.accentPurple)
                             .padding(.top, 8)
 
                         Text("Built for people who build things")
-                            .font(.system(size: 20, weight: .bold))
+                            .font(BlipFonts.sectionHeader)
                             .foregroundStyle(BlipColors.textPrimary)
 
                         LazyVGrid(columns: columns, spacing: 12) {
@@ -125,11 +125,11 @@ struct UseCasesView: View {
     private func qrExample(icon: String, text: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 13))
+                .font(BlipFonts.caption)
                 .foregroundStyle(BlipColors.accentPurple)
                 .frame(width: 20)
             Text(text)
-                .font(.system(size: 13))
+                .font(BlipFonts.captionRegular)
                 .foregroundStyle(BlipColors.textSecondary)
         }
     }
@@ -193,16 +193,16 @@ private struct ActionExampleRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(example.notification)
-                .font(.system(size: 13))
+                .font(BlipFonts.captionRegular)
                 .foregroundStyle(BlipColors.textPrimary)
 
             HStack(spacing: 6) {
                 Text("→")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .font(BlipFonts.button)
                     .foregroundStyle(BlipColors.textSecondary)
                 ForEach(Array(example.buttons.enumerated()), id: \.offset) { _, button in
                     Text(button.label)
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .font(BlipFonts.sectionLabel)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(buttonColor(button.style))
@@ -317,15 +317,15 @@ private struct UseCaseCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Text(useCase.emoji)
-                    .font(.system(size: 22))
+                    .font(BlipFonts.titleMono)
                 Text(useCase.title)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(BlipFonts.labelBold)
                     .foregroundStyle(BlipColors.textPrimary)
                     .lineLimit(2)
             }
 
             Text(useCase.description)
-                .font(.system(size: 12))
+                .font(BlipFonts.small)
                 .foregroundStyle(BlipColors.textSecondary)
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -334,7 +334,7 @@ private struct UseCaseCard: View {
                 Text(useCase.example)
                 Text("→ " + useCase.action)
             }
-            .font(.system(size: 10, design: .monospaced))
+            .font(BlipFonts.codeSmall)
             .foregroundStyle(Color(red: 0, green: 0.85, blue: 0.49))
             .padding(8)
             .frame(maxWidth: .infinity, alignment: .leading)
