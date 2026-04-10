@@ -41,6 +41,7 @@ targets:
       LSApplicationCategoryType: public.app-category.developer-tools
     dependencies:
       - target: BzapNotificationService
+      - target: BzapWidget
     entitlements:
       path: Blip/Blip.entitlements
       properties:
@@ -66,6 +67,28 @@ targets:
       path: BzapNotificationService/BzapNotificationService.entitlements
       properties:
         aps-environment: development
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+
+  BzapWidget:
+    type: app-extension
+    supportedDestinations: [iOS]
+    sources:
+      - path: BzapWidget
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.isylva.boopsy.widget
+        DEVELOPMENT_TEAM: 7TH7A8M6P4
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+    plist:
+      NSExtension:
+        NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: BzapWidget/BzapWidget.entitlements
+      properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
 
