@@ -52,7 +52,7 @@ struct TemplateDetailView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             Text(resolvedSnippet)
                                 .font(BlipFonts.code)
-                                .foregroundStyle(BlipColors.textPrimary)
+                                .foregroundStyle(BlipColors.textCode)
                         }
                     }
                     .padding()

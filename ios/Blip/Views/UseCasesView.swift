@@ -300,8 +300,7 @@ private struct UseCaseCard: View {
                 Text(useCase.title)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(BlipColors.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .lineLimit(2)
             }
 
             Text(useCase.description)

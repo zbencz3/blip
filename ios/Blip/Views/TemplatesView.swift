@@ -124,9 +124,12 @@ private struct TemplateRow: View {
                 Text(template.name)
                     .font(BlipFonts.body)
                     .foregroundStyle(BlipColors.textPrimary)
+                    .lineLimit(2)
                 Text(template.description)
                     .font(BlipFonts.caption)
                     .foregroundStyle(BlipColors.textSecondary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
             }
 
             Spacer()
