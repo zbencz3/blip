@@ -39,6 +39,9 @@ targets:
       NSAppTransportSecurity:
         NSAllowsLocalNetworking: true
       LSApplicationCategoryType: public.app-category.developer-tools
+      CFBundleURLTypes:
+        - CFBundleURLSchemes:
+            - bzap
     dependencies:
       - target: BzapNotificationService
       - target: BzapWidget

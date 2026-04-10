@@ -275,6 +275,7 @@ struct BzapWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: MonitorProvider()) { entry in
             BzapWidgetEntryView(entry: entry)
+                .widgetURL(URL(string: "bzap://monitors"))
         }
         .configurationDisplayName("Monitors")
         .description("Monitor uptime at a glance.")

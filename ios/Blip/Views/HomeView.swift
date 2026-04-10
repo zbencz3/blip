@@ -222,6 +222,11 @@ struct HomeView: View {
             .preferredColorScheme(.dark)
         }
         .onAppear { playStartupSound() }
+        .onOpenURL { url in
+            if url.host == "monitors" {
+                showMonitors = true
+            }
+        }
     }
 
     private func playStartupSound() {
